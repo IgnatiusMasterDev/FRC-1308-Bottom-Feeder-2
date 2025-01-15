@@ -14,6 +14,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.ADIS16470_IMU.IMUAxis;
 import frc.robot.Constants.DriveConstants;
@@ -55,6 +59,14 @@ public class DriveSubsystem extends SubsystemBase {
           m_rearRight.getPosition()
       });
 
+  // NetworkTable variables
+  NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
+  NetworkTable table = networkTables.getTable("drive");
+  DoublePublisher headingPublisher = table.getDoubleTopic("heading").publish();
+  DoubleArrayPublisher posePublisher = table.getDoubleArrayTopic("pose").publish();
+  DoubleArrayPublisher swerveStatePublisher = table.getDoubleArrayTopic("swerveState").publish();
+  DoubleArrayPublisher swerveSetpointsPublisher = table.getDoubleArrayTopic("swerveSetpoints").publish();
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
@@ -72,6 +84,18 @@ public class DriveSubsystem extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+    
+    // Publish DriveSubsystem telemetry to NetworkTables
+    headingPublisher.set(getHeading());
+
+    double[] poseArr = {
+      getPose().getX(),
+      getPose().getY()
+    };
+    posePublisher.set(poseArr);
+
+    // TODO add publishing for swerveModuleStates: swerveStatePublisher and swerveSetPointPublisher
+    // TODO write github wiki on subsystems and NetworkTables
   }
 
   /**
