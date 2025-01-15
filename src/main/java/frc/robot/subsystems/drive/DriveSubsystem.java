@@ -14,10 +14,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.ADIS16470_IMU.IMUAxis;
 import frc.robot.Constants.DriveConstants;
@@ -60,12 +60,21 @@ public class DriveSubsystem extends SubsystemBase {
       });
 
   // NetworkTable variables
-  NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
-  NetworkTable table = networkTables.getTable("drive");
-  DoublePublisher headingPublisher = table.getDoubleTopic("heading").publish();
-  DoubleArrayPublisher posePublisher = table.getDoubleArrayTopic("pose").publish();
-  DoubleArrayPublisher swerveStatePublisher = table.getDoubleArrayTopic("swerveState").publish();
-  DoubleArrayPublisher swerveSetpointsPublisher = table.getDoubleArrayTopic("swerveSetpoints").publish();
+  private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
+  private final NetworkTable table = networkTables.getTable("drive");
+
+  private final DoublePublisher headingPublisher = table
+    .getDoubleTopic("heading")
+    .publish();
+  private final StructArrayPublisher<Pose2d> posePublisher = table
+    .getStructArrayTopic("pose", Pose2d.struct)
+    .publish();
+  private final StructArrayPublisher<SwerveModuleState> swerveStatePublisher = table
+    .getStructArrayTopic("currentSwerveState", SwerveModuleState.struct)
+    .publish();
+  private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = table
+    .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
+    .publish();
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
@@ -87,15 +96,12 @@ public class DriveSubsystem extends SubsystemBase {
     
     // Publish DriveSubsystem telemetry to NetworkTables
     headingPublisher.set(getHeading());
+    
+    Pose2d[] pose = {getPose()};
+    posePublisher.set(pose);
 
-    double[] poseArr = {
-      getPose().getX(),
-      getPose().getY()
-    };
-    posePublisher.set(poseArr);
-
-    // TODO add publishing for swerveModuleStates: swerveStatePublisher and swerveSetPointPublisher
-    // TODO write github wiki on subsystems and NetworkTables
+    swerveStatePublisher.set(getModuleStates());
+    desiredSwerveStatePublisher.set(getDesiredModuleStates());
   }
 
   /**
@@ -163,9 +169,9 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Sets the swerve ModuleStates.
+   * Sets the swerve module states.
    *
-   * @param desiredStates The desired SwerveModule states.
+   * @param desiredStates The desired swerve module states.
    */
   public void setModuleStates(SwerveModuleState[] desiredStates) {
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -174,6 +180,38 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(desiredStates[1]);
     m_rearLeft.setDesiredState(desiredStates[2]);
     m_rearRight.setDesiredState(desiredStates[3]);
+  }
+
+  /**
+   * Returns the current swerve module states.
+   * 
+   * @return The current swerve module states.
+   */
+  public SwerveModuleState[] getModuleStates() {
+    SwerveModuleState[] states = {
+      m_frontLeft.getState(),
+      m_frontRight.getState(),
+      m_rearLeft.getState(),
+      m_rearRight.getState()
+    };
+
+    return states;
+  }
+
+  /**
+   * Returns the desired swerve module states.
+   * 
+   * @return The desired swerve module states.
+   */
+  public SwerveModuleState[] getDesiredModuleStates() {
+    SwerveModuleState[] desiredStates = {
+      m_frontLeft.getDesiredState(),
+      m_frontRight.getDesiredState(),
+      m_rearLeft.getDesiredState(),
+      m_rearRight.getDesiredState()
+    };
+
+    return desiredStates;
   }
 
   /** Resets the drive encoders to currently read a position of 0. */
