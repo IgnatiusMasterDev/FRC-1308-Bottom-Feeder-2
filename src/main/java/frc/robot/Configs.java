@@ -1,5 +1,8 @@
 package frc.robot;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.Slot0Configs;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -8,28 +11,25 @@ import frc.robot.Constants.ModuleConstants;
 
 public final class Configs {
     public static final class MAXSwerveModule {
-        public static final SparkMaxConfig drivingConfig = new SparkMaxConfig();
+        public static final TalonFXConfiguration drivingConfig = new TalonFXConfiguration();
+        public static final Slot0Configs slot0Config = new Slot0Configs();
         public static final SparkMaxConfig turningConfig = new SparkMaxConfig();
+        public static final CANcoderConfiguration CANCoderConfig = new CANcoderConfiguration();
 
         static {
             // Use module constants to calculate conversion factors and feed forward gain.
-            double drivingFactor = ModuleConstants.kWheelDiameterMeters * Math.PI
+            // TODO I feel like we might need to use drivingFactor for something but don't know what yet
+            @SuppressWarnings("unused")
+                double drivingFactor = ModuleConstants.kWheelDiameterMeters * Math.PI
                     / ModuleConstants.kDrivingMotorReduction;
             double turningFactor = 2 * Math.PI;
             double drivingVelocityFeedForward = 1 / ModuleConstants.kDriveWheelFreeSpeedRps;
 
-            drivingConfig
-                    .idleMode(IdleMode.kBrake)
-                    .smartCurrentLimit(50);
-            drivingConfig.encoder
-                    .positionConversionFactor(drivingFactor) // meters
-                    .velocityConversionFactor(drivingFactor / 60.0); // meters per second
-            drivingConfig.closedLoop
-                    .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                    // These are example gains you may need to them for your own robot!
-                    .pid(0.04, 0, 0)
-                    .velocityFF(drivingVelocityFeedForward)
-                    .outputRange(-1, 1);
+            // Configure PID values for Talon
+            slot0Config.kV = drivingVelocityFeedForward;
+            slot0Config.kP = 0.04;
+            slot0Config.kI = 0;
+            slot0Config.kD = 0;
 
             turningConfig
                     .idleMode(IdleMode.kBrake)
