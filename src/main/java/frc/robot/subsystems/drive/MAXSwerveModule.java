@@ -17,7 +17,6 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.revrobotics.AbsoluteEncoder;
 
 import frc.robot.Configs;
 import frc.robot.Constants;
@@ -25,17 +24,15 @@ import frc.robot.Constants;
 public class MAXSwerveModule {
   private final TalonFX m_drivingTalon;
   private final SparkMax m_turningSpark;
+  private final CANcoder m_turningEncoder;
 
   // Talon specific vars
   private final VelocityVoltage m_talonVelocityRequest = new VelocityVoltage(0);
+  private SparkClosedLoopController m_turningClosedLoopController;
 
-  private final CANcoder m_drivingEncoder;
-  private final AbsoluteEncoder m_turningEncoder;
-
-  private final SparkClosedLoopController m_turningClosedLoopController;
 
   private double m_chassisAngularOffset = 0;
-  private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d());
+  private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d(0));
 
   /**
    * Constructs a MAXSwerveModule and configures the driving and turning motor,
@@ -45,24 +42,18 @@ public class MAXSwerveModule {
    */
   public MAXSwerveModule(int drivingCANId, int turningCANId, int encoderCANId, double chassisAngularOffset) {
     m_drivingTalon = new TalonFX(drivingCANId);
+    m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.slot0Config);
+    m_drivingTalon.setPosition(0);
+    m_drivingTalon.setControl(m_talonVelocityRequest); // set driving velocity to 0. We only need to do this for Talon.
+
     m_turningSpark = new SparkMax(turningCANId, MotorType.kBrushless);
-
-    m_drivingEncoder = new CANcoder(encoderCANId);
-    m_turningEncoder = m_turningSpark.getAbsoluteEncoder();
-
-    m_turningClosedLoopController = m_turningSpark.getClosedLoopController();
-
-    // Apply the respective configurations to the Talons and SPARKS. Reset parameters before
-    // applying the configuration to bring the SPARK and Talon to a known good state. Persist
-    // the settings to the SPARK to avoid losing them on a power cycle.
-    m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.drivingConfig);
     m_turningSpark.configure(Configs.MAXSwerveModule.turningConfig, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
+    m_turningClosedLoopController = m_turningSpark.getClosedLoopController();
+
+    m_turningEncoder = new CANcoder(encoderCANId);
 
     m_chassisAngularOffset = chassisAngularOffset;
-    m_desiredState.angle = new Rotation2d(m_turningEncoder.getPosition());
-    m_drivingEncoder.setPosition(0);
-    m_drivingTalon.setControl(m_talonVelocityRequest); // set driving velocity to 0. We only need to do this for Talon.
   }
 
   /**
@@ -73,8 +64,8 @@ public class MAXSwerveModule {
   public SwerveModuleState getState() {
     // Apply chassis angular offset to the encoder position to get the position
     // relative to the chassis.
-    return new SwerveModuleState(m_drivingEncoder.getVelocity().getValueAsDouble(),
-        new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
+    return new SwerveModuleState(m_drivingTalon.getVelocity().getValueAsDouble(),
+        new Rotation2d(m_turningEncoder.getPosition().getValueAsDouble() - m_chassisAngularOffset));
   }
 
   /**
@@ -95,8 +86,8 @@ public class MAXSwerveModule {
     // Apply chassis angular offset to the encoder position to get the position
     // relative to the chassis.
     return new SwerveModulePosition(
-        m_drivingEncoder.getPosition().getValueAsDouble(),
-        new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
+        m_drivingTalon.getPosition().getValueAsDouble(),
+        new Rotation2d(m_turningEncoder.getPosition().getValueAsDouble() - m_chassisAngularOffset));
   }
 
   /**
@@ -111,18 +102,18 @@ public class MAXSwerveModule {
     correctedDesiredState.angle = desiredState.angle.plus(Rotation2d.fromRadians(m_chassisAngularOffset));
 
     // Optimize the reference state to avoid spinning further than 90 degrees.
-    correctedDesiredState.optimize(new Rotation2d(m_turningEncoder.getPosition()));
+    correctedDesiredState.optimize(getPosition().angle);
 
     // Command driving Talon and turning SPARK towards their respective setpoints.
     // The driving Talon accepts velocity in rps, so we convert from m/s by dividing by wheel circumference.
     m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / Constants.ModuleConstants.kWheelCircumferenceMeters));
-    m_turningClosedLoopController.setReference(correctedDesiredState.angle.getRadians(), ControlType.kPosition);
+    m_turningClosedLoopController.setReference(correctedDesiredState.angle.getRadians() / (2 * Math.PI), ControlType.kPosition);
 
     m_desiredState = desiredState;
   }
 
   /** Zeroes all the SwerveModule encoders. */
   public void resetEncoders() {
-    m_drivingEncoder.setPosition(0);
+    m_drivingTalon.setPosition(0);
   }
 }
