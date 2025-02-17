@@ -56,6 +56,16 @@ public final class Constants {
     public static final int kFrontRightTurningCanId = 5;
     public static final int kRearRightTurningCanId = 9;
 
+    // SPARK MAX CANCODER IDs
+    // for encoders
+    public static final int kfrontLeftCANCoderId = 10;
+    public static final int kRearLeftCANCoderId = 12;
+    public static final int kFrontRightCANCoderId = 11;
+    public static final int kRearRightCANCoderId = 13;
+
+    // Pigeon ID
+    public static final int kPigeonCanId = 25;
+
     public static final boolean kGyroReversed = false;
   }
 

@@ -43,11 +43,11 @@ public class MAXSwerveModule {
    * MAXSwerve Module built with NEOs, SPARKS MAX, and a Through Bore
    * Encoder.
    */
-  public MAXSwerveModule(int drivingCANId, int turningCANId, double chassisAngularOffset) {
-    m_drivingTalon = new TalonFX(turningCANId);
+  public MAXSwerveModule(int drivingCANId, int turningCANId, int encoderCANId, double chassisAngularOffset) {
+    m_drivingTalon = new TalonFX(drivingCANId);
     m_turningSpark = new SparkMax(turningCANId, MotorType.kBrushless);
 
-    m_drivingEncoder = new CANcoder(turningCANId);
+    m_drivingEncoder = new CANcoder(encoderCANId);
     m_turningEncoder = m_turningSpark.getAbsoluteEncoder();
 
     m_turningClosedLoopController = m_turningSpark.getClosedLoopController();
