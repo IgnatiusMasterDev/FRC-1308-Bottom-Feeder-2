@@ -4,13 +4,12 @@
 
 package frc.robot.subsystems.drive;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -19,17 +18,15 @@ import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import frc.robot.Configs;
-import frc.robot.Constants;
+import frc.robot.Constants.ModuleConstants;
 
 public class MAXSwerveModule {
   private final TalonFX m_drivingTalon;
   private final SparkMax m_turningSpark;
   private final CANcoder m_turningEncoder;
 
-  // Talon specific vars
   private final VelocityVoltage m_talonVelocityRequest = new VelocityVoltage(0);
-  private SparkClosedLoopController m_turningClosedLoopController;
-
+  private final PIDController m_turningController = new PIDController(0.3,0,0);
 
   private double m_chassisAngularOffset = 0;
   private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d(0));
@@ -41,53 +38,22 @@ public class MAXSwerveModule {
    * Encoder.
    */
   public MAXSwerveModule(int drivingCANId, int turningCANId, int encoderCANId, double chassisAngularOffset) {
+    // Driving Talon configuration
     m_drivingTalon = new TalonFX(drivingCANId);
     m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.slot0Config);
     m_drivingTalon.setPosition(0);
     m_drivingTalon.setControl(m_talonVelocityRequest); // set driving velocity to 0. We only need to do this for Talon.
 
+    // Turning Spark configuration
     m_turningSpark = new SparkMax(turningCANId, MotorType.kBrushless);
     m_turningSpark.configure(Configs.MAXSwerveModule.turningConfig, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
-    m_turningClosedLoopController = m_turningSpark.getClosedLoopController();
 
+    m_turningController.enableContinuousInput(0, 2 * Math.PI);
     m_turningEncoder = new CANcoder(encoderCANId);
 
     m_chassisAngularOffset = chassisAngularOffset;
-  }
-
-  /**
-   * Returns the current state of the module.
-   *
-   * @return The current state of the module.
-   */
-  public SwerveModuleState getState() {
-    // Apply chassis angular offset to the encoder position to get the position
-    // relative to the chassis.
-    return new SwerveModuleState(m_drivingTalon.getVelocity().getValueAsDouble(),
-        new Rotation2d(m_turningEncoder.getPosition().getValueAsDouble() - m_chassisAngularOffset));
-  }
-
-  /**
-   * Returns the desired state of the module.
-   * 
-   * @return the desired state of the module.
-   */
-  public SwerveModuleState getDesiredState() {
-    return m_desiredState;
-  }
-
-  /**
-   * Returns the current position of the module.
-   *
-   * @return The current position of the module.
-   */
-  public SwerveModulePosition getPosition() {
-    // Apply chassis angular offset to the encoder position to get the position
-    // relative to the chassis.
-    return new SwerveModulePosition(
-        m_drivingTalon.getPosition().getValueAsDouble(),
-        new Rotation2d(m_turningEncoder.getPosition().getValueAsDouble() - m_chassisAngularOffset));
+    m_desiredState.angle = getPosition().angle;
   }
 
   /**
@@ -99,21 +65,76 @@ public class MAXSwerveModule {
     // Apply chassis angular offset to the desired state.
     SwerveModuleState correctedDesiredState = new SwerveModuleState();
     correctedDesiredState.speedMetersPerSecond = desiredState.speedMetersPerSecond;
-    correctedDesiredState.angle = desiredState.angle.plus(Rotation2d.fromRadians(m_chassisAngularOffset));
+    correctedDesiredState.angle = desiredState.angle;
 
     // Optimize the reference state to avoid spinning further than 90 degrees.
     correctedDesiredState.optimize(getPosition().angle);
 
     // Command driving Talon and turning SPARK towards their respective setpoints.
     // The driving Talon accepts velocity in rps, so we convert from m/s by dividing by wheel circumference.
-    m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / Constants.ModuleConstants.kWheelCircumferenceMeters));
-    m_turningClosedLoopController.setReference(correctedDesiredState.angle.getRadians() / (2 * Math.PI), ControlType.kPosition);
+    m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / ModuleConstants.kWheelCircumferenceMeters));
+    m_turningSpark.set(-m_turningController.calculate(getAngle().getRadians(), correctedDesiredState.angle.getRadians()));
 
     m_desiredState = desiredState;
+  }
+
+  
+  /**
+   * Returns the current state of the module.
+   *
+   * @return The current state of the module.
+   */
+  public SwerveModuleState getState() {
+    // Apply chassis angular offset to the encoder position to get the position
+    // relative to the chassis.
+    return new SwerveModuleState(getVelocity(),
+    getAngle());
+  }
+
+  /**
+   * Returns the current position of the module.
+   *
+   * @return The current position of the module.
+   */
+  public SwerveModulePosition getPosition() {
+    // Apply chassis angular offset to the encoder position to get the position
+    // relative to the chassis.
+    return new SwerveModulePosition(
+        m_drivingTalon.getPosition().getValueAsDouble(), getAngle());
+  }
+
+  /**
+   * Returns the current angle of the module.
+   * 
+   * @return The current angle in radians between 0 and 2pi.
+   */
+  public Rotation2d getAngle() {
+    double angle = (m_turningEncoder.getPosition().getValueAsDouble() % 1) * 2 * Math.PI - m_chassisAngularOffset;
+    angle = angle > 0 ? angle : 2 * Math.PI + angle;
+    return Rotation2d.fromRadians(angle);
+  }
+
+  /**
+   * Returns the current velocity of the module.
+   * 
+   * @return The current velocity of the module in meters per second.
+   */
+  public double getVelocity() {
+    return m_drivingTalon.getVelocity().getValueAsDouble() * ModuleConstants.kWheelCircumferenceMeters;
   }
 
   /** Zeroes all the SwerveModule encoders. */
   public void resetEncoders() {
     m_drivingTalon.setPosition(0);
   }
+
+  /**
+   * Returns the desired state of the module.
+   * 
+   * @return the desired state of the module.
+   */
+  public SwerveModuleState getDesiredState() {
+    return m_desiredState;
+  }
+
 }
