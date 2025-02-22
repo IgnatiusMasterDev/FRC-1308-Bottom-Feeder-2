@@ -1,6 +1,6 @@
 package frc.robot;
 
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.AudioConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -11,7 +11,7 @@ public final class Configs {
     public static final class MAXSwerveModule {
         public static final Slot0Configs slot0Config = new Slot0Configs();
         public static final SparkMaxConfig turningConfig = new SparkMaxConfig();
-        public static final CANcoderConfiguration CANCoderConfig = new CANcoderConfiguration();
+        public static final AudioConfigs audioConfig = new AudioConfigs();
 
         static {
             // Use module constants to calculate conversion factors and feed forward gain.
@@ -32,6 +32,8 @@ public final class Configs {
                     .inverted(true)
                     .positionConversionFactor(turningFactor) // radians
                     .velocityConversionFactor(turningFactor / 60.0); // radians per second
+
+            audioConfig.AllowMusicDurDisable = true;
         }
     }
 }

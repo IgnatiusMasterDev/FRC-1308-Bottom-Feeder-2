@@ -46,6 +46,7 @@ public class MAXSwerveModule {
     // Driving Talon configuration
     m_drivingTalon = new TalonFX(drivingCANId);
     m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.slot0Config);
+    m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.audioConfig);
     m_drivingTalon.setPosition(0);
     m_drivingTalon.setControl(m_talonVelocityRequest);
 
