@@ -56,7 +56,7 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Pose estimation
+  // Odometry and Pose estimator
   private SwerveDrivePoseEstimator m_poseEstimator;
 
   // NetworkTable variables
@@ -88,6 +88,7 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
+    //m_poseEstimator.addVisionMeasurement(null, getHeading());
     
     // Publish DriveSubsystem telemetry to NetworkTables
     headingPublisher.set(new Rotation2d[] {getHeading()});
@@ -103,16 +104,6 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public Pose2d getPose() {
     return m_poseEstimator.getEstimatedPosition();
-  }
-
-  /**
-   * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
-   * 
-   * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-   * @param timestampSeconds The timestamp of the vision measurement in seconds.
-   */
-  public void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
-    m_poseEstimator.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds);
   }
 
   /**
@@ -224,12 +215,11 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Sets the wheels into an X formation to prevent movement.
+   * Returns the turn rate of the robot.
+   *
+   * @return The turn rate of the robot, in degrees per second
    */
-  public void setX() {
-    m_frontLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
-    m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
-    m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
-    m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
+  public double getTurnRate() {
+    return m_gyro.getAngularVelocityZWorld().getValueAsDouble() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
   }
 }
