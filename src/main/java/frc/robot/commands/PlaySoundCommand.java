@@ -16,10 +16,6 @@ public class PlaySoundCommand extends Command {
     @Override
     public void initialize() {
         m_soundSubsystem.loadMusic(m_filepath);
-    }
-
-    @Override
-    public void execute() {
         m_soundSubsystem.play();
     }
 
