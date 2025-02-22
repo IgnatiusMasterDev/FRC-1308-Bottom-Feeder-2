@@ -31,28 +31,28 @@ public class DriveSubsystem extends SubsystemBase {
       DriveConstants.kFrontLeftTurningCanId,
       DriveConstants.kfrontLeftCANCoderId,
       DriveConstants.kFrontLeftChassisAngularOffset,
-      true);
+      false);
 
   private final MAXSwerveModule m_frontRight = new MAXSwerveModule(
       DriveConstants.kFrontRightDrivingCanId,
       DriveConstants.kFrontRightTurningCanId,
       DriveConstants.kFrontRightCANCoderId,
       DriveConstants.kFrontRightChassisAngularOffset,
-      false);
+      true);
 
   private final MAXSwerveModule m_rearLeft = new MAXSwerveModule(
       DriveConstants.kRearLeftDrivingCanId,
       DriveConstants.kRearLeftTurningCanId,
       DriveConstants.kRearLeftCANCoderId,
       DriveConstants.kBackLeftChassisAngularOffset,
-      true);
+      false);
 
   private final MAXSwerveModule m_rearRight = new MAXSwerveModule(
       DriveConstants.kRearRightDrivingCanId,
       DriveConstants.kRearRightTurningCanId,
       DriveConstants.kRearRightCANCoderId,
       DriveConstants.kBackRightChassisAngularOffset,
-      false);
+      true);
 
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
