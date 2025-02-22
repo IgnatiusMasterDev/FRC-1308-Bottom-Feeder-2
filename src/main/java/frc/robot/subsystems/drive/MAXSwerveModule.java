@@ -19,6 +19,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import frc.robot.Configs;
 import frc.robot.Constants.ModuleConstants;
+import frc.robot.subsystems.SoundSubsystem;
 
 public class MAXSwerveModule {
   // Motors
@@ -61,6 +62,8 @@ public class MAXSwerveModule {
     m_chassisAngularOffset = chassisAngularOffset;
     m_invert = driveInverted ? -1 : 1;
     m_desiredState.angle = getAngle();
+
+    SoundSubsystem.addInstrument(m_drivingTalon);
   }
 
   /**

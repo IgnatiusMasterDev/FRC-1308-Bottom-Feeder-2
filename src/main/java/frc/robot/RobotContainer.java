@@ -86,6 +86,9 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));
+    // Press down on left joystick to play mario jingle
+    new Trigger(() -> m_driverController.getLeftStickButton())
+        .onTrue(new PlaySoundCommand(m_soundSystem, "mario.chrp"));
     // Press down on right joystick to zero heading
     new Trigger(() -> m_driverController.getRightStickButton())
         .onTrue(new InstantCommand(
