@@ -38,14 +38,14 @@ public class DriveSubsystem extends SubsystemBase {
       DriveConstants.kFrontRightTurningCanId,
       DriveConstants.kFrontRightCANCoderId,
       DriveConstants.kFrontRightChassisAngularOffset,
-      true);
+      false);
 
   private final MAXSwerveModule m_rearLeft = new MAXSwerveModule(
       DriveConstants.kRearLeftDrivingCanId,
       DriveConstants.kRearLeftTurningCanId,
       DriveConstants.kRearLeftCANCoderId,
       DriveConstants.kBackLeftChassisAngularOffset,
-      false);
+      true);
 
   private final MAXSwerveModule m_rearRight = new MAXSwerveModule(
       DriveConstants.kRearRightDrivingCanId,
