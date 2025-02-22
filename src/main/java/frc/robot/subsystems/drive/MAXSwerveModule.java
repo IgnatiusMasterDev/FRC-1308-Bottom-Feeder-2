@@ -32,7 +32,8 @@ public class MAXSwerveModule {
   private final VelocityVoltage m_talonVelocityRequest = new VelocityVoltage(0);
   private final PIDController m_turningController = new PIDController(0.3,0,0);
 
-  private double m_chassisAngularOffset = 0;
+  private final double m_chassisAngularOffset;
+  private final int m_invert;
   private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d(0));
 
   /**
@@ -41,22 +42,23 @@ public class MAXSwerveModule {
    * MAXSwerve Module built with NEOs, SPARKS MAX, and a Through Bore
    * Encoder.
    */
-  public MAXSwerveModule(int drivingCANId, int turningCANId, int encoderCANId, double chassisAngularOffset) {
+  public MAXSwerveModule(int drivingCANId, int turningCANId, int encoderCANId, double chassisAngularOffset, boolean driveInverted) {
     // Driving Talon configuration
     m_drivingTalon = new TalonFX(drivingCANId);
     m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.slot0Config);
     m_drivingTalon.setPosition(0);
     m_drivingTalon.setControl(m_talonVelocityRequest);
 
-    // Turning Spark configuration
+    // Turning Spark and encoder configuration
     m_turningSpark = new SparkMax(turningCANId, MotorType.kBrushless);
     m_turningSpark.configure(Configs.MAXSwerveModule.turningConfig, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
-
     m_turningController.enableContinuousInput(0, 2 * Math.PI);
     m_turningEncoder = new CANcoder(encoderCANId);
 
+    // Set offset, inversion, and initial state
     m_chassisAngularOffset = chassisAngularOffset;
+    m_invert = driveInverted ? -1 : 1;
     m_desiredState.angle = getAngle();
   }
 
@@ -75,17 +77,17 @@ public class MAXSwerveModule {
     correctedDesiredState.optimize(getAngle());
 
     // Command driving Talon and turning SPARK towards their respective setpoints.
-    // The driving Talon accepts velocity in rps, so we convert from m/s by dividing by wheel circumference.
-    m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / ModuleConstants.kWheelCircumferenceMeters));
     m_turningSpark.set(m_turningController.calculate(getAngle().getRadians(), correctedDesiredState.angle.getRadians()));
+    // The driving Talon accepts velocity in rps, so we convert from m/s by dividing by wheel circumference.
+    m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / ModuleConstants.kWheelCircumferenceMeters * m_invert));
 
     m_desiredState = desiredState;
   }
 
-    /**
+  /**
    * Returns the desired state of the module.
    * 
-   * @return the desired state of the module.
+   * @return The desired state of the module.
    */
   public SwerveModuleState getDesiredState() {
     return m_desiredState;
@@ -112,10 +114,11 @@ public class MAXSwerveModule {
   /**
    * Returns the current angle of the module.
    * 
-   * @return The current angle in radians between 0 and 2pi.
+   * @return The current angle of the module.
    */
   private Rotation2d getAngle() {
     double angle = (m_turningEncoder.getPosition().getValueAsDouble() % 1) * 2 * Math.PI - m_chassisAngularOffset;
+    // we convert negative angles to positive so the angle will be between 0 and 2pi
     angle = angle > 0 ? angle : 2 * Math.PI + angle;
     return Rotation2d.fromRadians(angle);
   }
