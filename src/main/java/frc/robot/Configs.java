@@ -15,10 +15,6 @@ public final class Configs {
 
         static {
             // Use module constants to calculate conversion factors and feed forward gain.
-            // TODO I feel like we might need to use drivingFactor for something but don't know what yet
-            @SuppressWarnings("unused")
-                double drivingFactor = ModuleConstants.kWheelDiameterMeters * Math.PI
-                    / ModuleConstants.kDrivingMotorReduction;
             double turningFactor = 2 * Math.PI;
             double drivingVelocityFeedForward = 1 / ModuleConstants.kDriveWheelFreeSpeedRps;
 
@@ -30,6 +26,7 @@ public final class Configs {
 
             turningConfig
                     .idleMode(IdleMode.kBrake)
+                    .inverted(true)
                     .smartCurrentLimit(20);
             turningConfig.absoluteEncoder
                     .inverted(true)

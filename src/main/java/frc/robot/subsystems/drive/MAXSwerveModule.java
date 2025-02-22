@@ -21,10 +21,14 @@ import frc.robot.Configs;
 import frc.robot.Constants.ModuleConstants;
 
 public class MAXSwerveModule {
+  // Motors
   private final TalonFX m_drivingTalon;
   private final SparkMax m_turningSpark;
+
+  // Absolute Encoder
   private final CANcoder m_turningEncoder;
 
+  // Motor Controllers
   private final VelocityVoltage m_talonVelocityRequest = new VelocityVoltage(0);
   private final PIDController m_turningController = new PIDController(0.3,0,0);
 
@@ -42,7 +46,7 @@ public class MAXSwerveModule {
     m_drivingTalon = new TalonFX(drivingCANId);
     m_drivingTalon.getConfigurator().apply(Configs.MAXSwerveModule.slot0Config);
     m_drivingTalon.setPosition(0);
-    m_drivingTalon.setControl(m_talonVelocityRequest); // set driving velocity to 0. We only need to do this for Talon.
+    m_drivingTalon.setControl(m_talonVelocityRequest);
 
     // Turning Spark configuration
     m_turningSpark = new SparkMax(turningCANId, MotorType.kBrushless);
@@ -53,7 +57,7 @@ public class MAXSwerveModule {
     m_turningEncoder = new CANcoder(encoderCANId);
 
     m_chassisAngularOffset = chassisAngularOffset;
-    m_desiredState.angle = getPosition().angle;
+    m_desiredState.angle = getAngle();
   }
 
   /**
@@ -65,30 +69,35 @@ public class MAXSwerveModule {
     // Apply chassis angular offset to the desired state.
     SwerveModuleState correctedDesiredState = new SwerveModuleState();
     correctedDesiredState.speedMetersPerSecond = desiredState.speedMetersPerSecond;
-    correctedDesiredState.angle = desiredState.angle;
+    correctedDesiredState.angle = Rotation2d.fromRadians(desiredState.angle.getRadians());
 
     // Optimize the reference state to avoid spinning further than 90 degrees.
-    correctedDesiredState.optimize(getPosition().angle);
+    correctedDesiredState.optimize(getAngle());
 
     // Command driving Talon and turning SPARK towards their respective setpoints.
     // The driving Talon accepts velocity in rps, so we convert from m/s by dividing by wheel circumference.
     m_drivingTalon.setControl(m_talonVelocityRequest.withVelocity(correctedDesiredState.speedMetersPerSecond / ModuleConstants.kWheelCircumferenceMeters));
-    m_turningSpark.set(-m_turningController.calculate(getAngle().getRadians(), correctedDesiredState.angle.getRadians()));
+    m_turningSpark.set(m_turningController.calculate(getAngle().getRadians(), correctedDesiredState.angle.getRadians()));
 
     m_desiredState = desiredState;
   }
 
-  
+    /**
+   * Returns the desired state of the module.
+   * 
+   * @return the desired state of the module.
+   */
+  public SwerveModuleState getDesiredState() {
+    return m_desiredState;
+  }
+
   /**
    * Returns the current state of the module.
    *
    * @return The current state of the module.
    */
   public SwerveModuleState getState() {
-    // Apply chassis angular offset to the encoder position to get the position
-    // relative to the chassis.
-    return new SwerveModuleState(getVelocity(),
-    getAngle());
+    return new SwerveModuleState(getVelocity(), getAngle());
   }
 
   /**
@@ -97,10 +106,7 @@ public class MAXSwerveModule {
    * @return The current position of the module.
    */
   public SwerveModulePosition getPosition() {
-    // Apply chassis angular offset to the encoder position to get the position
-    // relative to the chassis.
-    return new SwerveModulePosition(
-        m_drivingTalon.getPosition().getValueAsDouble(), getAngle());
+    return new SwerveModulePosition(getDistance(), getAngle());
   }
 
   /**
@@ -108,7 +114,7 @@ public class MAXSwerveModule {
    * 
    * @return The current angle in radians between 0 and 2pi.
    */
-  public Rotation2d getAngle() {
+  private Rotation2d getAngle() {
     double angle = (m_turningEncoder.getPosition().getValueAsDouble() % 1) * 2 * Math.PI - m_chassisAngularOffset;
     angle = angle > 0 ? angle : 2 * Math.PI + angle;
     return Rotation2d.fromRadians(angle);
@@ -119,22 +125,21 @@ public class MAXSwerveModule {
    * 
    * @return The current velocity of the module in meters per second.
    */
-  public double getVelocity() {
+  private double getVelocity() {
     return m_drivingTalon.getVelocity().getValueAsDouble() * ModuleConstants.kWheelCircumferenceMeters;
+  }
+
+  /**
+   * Returns the distance measured by the wheel of the module.
+   * 
+   * @return The distance measured by the wheel of the module in meters.
+   */
+  private double getDistance() {
+    return m_drivingTalon.getPosition().getValueAsDouble() * ModuleConstants.kWheelCircumferenceMeters;
   }
 
   /** Zeroes all the SwerveModule encoders. */
   public void resetEncoders() {
     m_drivingTalon.setPosition(0);
   }
-
-  /**
-   * Returns the desired state of the module.
-   * 
-   * @return the desired state of the module.
-   */
-  public SwerveModuleState getDesiredState() {
-    return m_desiredState;
-  }
-
 }
