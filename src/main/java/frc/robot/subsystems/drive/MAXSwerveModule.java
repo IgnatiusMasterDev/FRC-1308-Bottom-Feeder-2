@@ -56,10 +56,9 @@ public class MAXSwerveModule {
     m_turningController.enableContinuousInput(0, 2 * Math.PI);
     m_turningEncoder = new CANcoder(encoderCANId);
 
-    // Set offset, inversion, and initial state
+    // Set offset and inversion
     m_chassisAngularOffset = chassisAngularOffset;
     m_invert = driveInverted ? -1 : 1;
-    m_desiredState.angle = getAngle();
   }
 
   /**
