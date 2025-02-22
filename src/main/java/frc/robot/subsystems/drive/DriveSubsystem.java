@@ -10,14 +10,13 @@ import edu.wpi.first.hal.FRCNetComm.tResourceType;
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.hal.HAL;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -57,23 +56,15 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Odometry class for tracking robot pose
-  SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
-      DriveConstants.kDriveKinematics,
-      Rotation2d.fromDegrees(getHeading()),
-      new SwerveModulePosition[] {
-          m_frontLeft.getPosition(),
-          m_frontRight.getPosition(),
-          m_rearLeft.getPosition(),
-          m_rearRight.getPosition()
-      });
+  // Odometry and Pose estimation
+  private SwerveDrivePoseEstimator m_poseEstimator;
 
   // NetworkTable variables
   private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
   private final NetworkTable table = networkTables.getTable("drive");
 
-  private final DoublePublisher headingPublisher = table
-    .getDoubleTopic("heading")
+  private final StructArrayPublisher<Rotation2d> headingPublisher = table
+    .getStructArrayTopic("heading", Rotation2d.struct)
     .publish();
   private final StructArrayPublisher<Pose2d> posePublisher = table
     .getStructArrayTopic("pose", Pose2d.struct)
@@ -89,26 +80,19 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+
+    // Initialize pose estimate
+    m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), DriveConstants.kStartPose); // TODO later, change to a dynamic vision call
   }
 
   @Override
   public void periodic() {
-    // Update the odometry in the periodic block
-    m_odometry.update(
-        Rotation2d.fromDegrees(getHeading()),
-        new SwerveModulePosition[] {
-            m_frontLeft.getPosition(),
-            m_frontRight.getPosition(),
-            m_rearLeft.getPosition(),
-            m_rearRight.getPosition()
-        });
+    m_poseEstimator.update(getHeading(), getModulePositions());
+    //m_poseEstimator.addVisionMeasurement(null, getHeading());
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    headingPublisher.set(getHeading());
-    
-    Pose2d[] pose = {getPose()};
-    posePublisher.set(pose);
-
+    headingPublisher.set(new Rotation2d[] {getHeading()});
+    posePublisher.set(new Pose2d[] {getPose()});
     swerveStatePublisher.set(getModuleStates());
     desiredSwerveStatePublisher.set(getDesiredModuleStates());
   }
@@ -119,24 +103,7 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The pose.
    */
   public Pose2d getPose() {
-    return m_odometry.getPoseMeters();
-  }
-
-  /**
-   * Resets the odometry to the specified pose.
-   *
-   * @param pose The pose to which to set the odometry.
-   */
-  public void resetOdometry(Pose2d pose) {
-    m_odometry.resetPosition(
-        Rotation2d.fromDegrees(getHeading()),
-        new SwerveModulePosition[] {
-            m_frontLeft.getPosition(),
-            m_frontRight.getPosition(),
-            m_rearLeft.getPosition(),
-            m_rearRight.getPosition()
-        },
-        pose);
+    return m_poseEstimator.getEstimatedPosition();
   }
 
   /**
@@ -157,7 +124,7 @@ public class DriveSubsystem extends SubsystemBase {
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
         fieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
-                Rotation2d.fromDegrees(getHeading()))
+                getHeading())
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
     SwerveDriveKinematics.desaturateWheelSpeeds(
         swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
@@ -197,14 +164,12 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The current swerve module states.
    */
   public SwerveModuleState[] getModuleStates() {
-    SwerveModuleState[] states = {
+    return new SwerveModuleState[] {
       m_frontLeft.getState(),
       m_frontRight.getState(),
       m_rearLeft.getState(),
       m_rearRight.getState()
     };
-
-    return states;
   }
 
   /**
@@ -221,6 +186,20 @@ public class DriveSubsystem extends SubsystemBase {
     };
 
     return desiredStates;
+  }
+
+  /**
+   * Returns the current swerve module positions.
+   * 
+   * @return The current swerve module positions. 
+   */
+  public SwerveModulePosition[] getModulePositions() {
+    return new SwerveModulePosition[] {
+      m_frontLeft.getPosition(),
+      m_frontRight.getPosition(),
+      m_rearLeft.getPosition(),
+      m_rearRight.getPosition()
+    };
   }
 
   /** Resets the drive encoders to currently read a position of 0. */
@@ -241,8 +220,8 @@ public class DriveSubsystem extends SubsystemBase {
    *
    * @return the robot's heading in degrees, from -180 to 180
    */
-  public double getHeading() {
-    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble()).getDegrees();
+  public Rotation2d getHeading() {
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
   }
 
   /**
