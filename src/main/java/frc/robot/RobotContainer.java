@@ -61,10 +61,7 @@ public class RobotContainer {
                 -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
                 true),
             m_robotDrive));
-    
-    // Play Mario jingle to tell everyone that the robot is on
-    new PlaySoundCommand(m_soundSystem, "mario.chrp").schedule();
-  }
+    }
 
   /**
    * Use this method to define your button->command mappings. Buttons can be
@@ -81,7 +78,10 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_robotDrive.setX(),
             m_robotDrive));
-    // Press down on rigt joystick to zero heading
+    // Press down on left joystick to play mario jingle
+    new Trigger(() -> m_driverController.getLeftStickButton())
+        .onTrue(new PlaySoundCommand(m_soundSystem, "mario.chrp"));
+    // Press down on right joystick to zero heading
     new Trigger(() -> m_driverController.getRightStickButton())
         .onTrue(new RunCommand(
             () -> m_robotDrive.zeroHeading(), m_robotDrive));
