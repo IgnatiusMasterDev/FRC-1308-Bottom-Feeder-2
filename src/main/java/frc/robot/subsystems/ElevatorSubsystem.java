@@ -2,7 +2,12 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ElevatorConstants;
 
@@ -14,6 +19,25 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     private DigitalInput topLimitSwitch = new DigitalInput(9);
     private DigitalInput bottomLimitSwitch = new DigitalInput(8);
+
+    private final Encoder encoder = new Encoder(0, 1, false, EncodingType.k2X);
+
+    // Network tables publishing
+    private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
+    private final NetworkTable table = networkTables.getTable("elevator");
+
+    private final DoublePublisher encoderPublisher = table
+        .getDoubleTopic("position")
+        .publish();
+    private final DoublePublisher velocityPublisher = table
+        .getDoubleTopic("velocity")
+        .publish();
+
+    @Override
+    public void periodic() {
+        encoderPublisher.set(encoder.getDistance());
+        velocityPublisher.set(encoder.getRate());
+    }
 
     /**
      * Begin raising the elevator. The elevator will not rise or will stop moving if the
