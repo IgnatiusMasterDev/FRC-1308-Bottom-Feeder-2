@@ -21,6 +21,7 @@ import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -81,16 +82,16 @@ public class RobotContainer {
             m_robotDrive));
     // Press down on right joystick to zero heading
     new Trigger(() -> m_driverController.getRightStickButton())
-        .onTrue(new RunCommand(
+        .onTrue(new InstantCommand(
             () -> m_robotDrive.zeroHeading(), m_robotDrive));
     // Press up on POV to raise elevator
     new Trigger(() -> m_driverController.getPOV() == 0)
-        .onTrue(new RunCommand(
-            () -> m_elevator.rise(), m_elevator));
+        .whileTrue(new RunCommand(
+            () -> m_elevator.up(), m_elevator));
     // Press down on POV to lower elevator
     new Trigger(() -> m_driverController.getPOV() == 180)
-        .onTrue(new RunCommand(
-            () -> m_elevator.fall(), m_elevator));
+        .whileTrue(new RunCommand(
+            () -> m_elevator.down(), m_elevator));
   }
 
   /**

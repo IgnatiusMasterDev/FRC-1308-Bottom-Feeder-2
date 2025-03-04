@@ -16,24 +16,34 @@ public class ElevatorSubsystem extends SubsystemBase {
     private DigitalInput bottomLimitSwitch = new DigitalInput(8);
 
     /**
-     * Raise the elevator.
+     * Begin raising the elevator. The elevator will not rise or will stop moving if the
+     * top limit switch is pressed.
+     *  
+     * @return true if the elevator is rising.
      */
-    public void rise() {
+    public boolean up() {
         if (topLimitSwitch.get()) {
             setElevatorSpeed(ElevatorConstants.kElevatorSpeed);
+            return true;
         } else {
             stop();
+            return false;
         }
     }
 
     /**
-     * Lower the elevator.
+     * Begin lowering the elevator. The elevator will not lower or
+     * will stop moving if the bottom limit switch is pressed.
+     * 
+     * @return true if the elevator is lowering.
      */
-    public void fall() {
+    public boolean down() {
         if (bottomLimitSwitch.get()) {
             setElevatorSpeed(-ElevatorConstants.kElevatorSpeed);
+            return true;
         } else {
             stop();
+            return false;
         }
     }
 
