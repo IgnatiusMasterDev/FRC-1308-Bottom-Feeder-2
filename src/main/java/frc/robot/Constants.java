@@ -93,7 +93,7 @@ public final class Constants {
     public static final int kTopLimitSwitchChannelId = 8;
     public static final int kBottomLimitSwitchChannelId = 9;
 
-    public static final double kElevatorSpeed = .2;
+    public static final double kElevatorSpeed = 1;
   }
 
   public static final class OIConstants {
