@@ -86,6 +86,16 @@ public final class Constants {
         / kDrivingMotorReduction;
   }
 
+  public static final class ElevatorConstants {
+    public static final int kTalon1CanId = 19;
+    public static final int kTalon2CanId = 20;
+
+    public static final int kTopLimitSwitchChannelId = 8;
+    public static final int kBottomLimitSwitchChannelId = 9;
+
+    public static final double kElevatorSpeed = 1;
+  }
+
   public static final class OIConstants {
     public static final int kDriverControllerPort = 0;
     public static final double kDriveDeadband = 0.05;
