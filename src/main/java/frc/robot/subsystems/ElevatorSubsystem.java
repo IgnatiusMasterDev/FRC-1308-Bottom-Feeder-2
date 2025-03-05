@@ -1,7 +1,9 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -32,11 +34,30 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
         .publish();
+    private final BooleanPublisher topLimitSwitchPublisher = table
+        .getBooleanTopic("top limit switch")
+        .publish();
+    private final BooleanPublisher bottomLimitSwitchPublisher = table
+        .getBooleanTopic("bottom limit switch")
+        .publish();
+
+    /**
+     * Creates a new ElevatorSubsystem with the elevator motors
+     * configured to break on idle.
+     */
+    public ElevatorSubsystem() {
+        m_talon1.setNeutralMode(NeutralModeValue.Brake);
+        m_talon2.setNeutralMode(NeutralModeValue.Brake);
+    }
 
     @Override
     public void periodic() {
+        // Publish values to NetworkTables
         encoderPublisher.set(encoder.getDistance());
         velocityPublisher.set(encoder.getRate());
+        topLimitSwitchPublisher.set(atTop());
+        bottomLimitSwitchPublisher.set(atBottom());
+
     }
 
     /**
@@ -46,7 +67,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is rising.
      */
     public boolean up() {
-        if (topLimitSwitch.get()) {
+        if (!atTop()) {
             setElevatorSpeed(ElevatorConstants.kElevatorSpeed);
             return true;
         } else {
@@ -62,7 +83,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is lowering.
      */
     public boolean down() {
-        if (bottomLimitSwitch.get()) {
+        if (!atBottom()) {
             setElevatorSpeed(-ElevatorConstants.kElevatorSpeed);
             return true;
         } else {
@@ -88,5 +109,23 @@ public class ElevatorSubsystem extends SubsystemBase {
         // so one must be inverted to spin in the same direction
         m_talon1.set(speed);
         m_talon2.set(-speed);
+    }
+
+    /**
+     * Returns true if the elevator is as far up as it can be.
+     * 
+     * @return true if the elevator is all the way up
+     */
+    private boolean atTop() {
+        return topLimitSwitch.get();
+    }
+
+    /**
+     * Returns true if the elevator is as far down as it can be.
+     * 
+     * @return true if the elevator is all the way down.
+     */
+    private boolean atBottom() {
+        return bottomLimitSwitch.get();
     }
 }
