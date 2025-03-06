@@ -20,6 +20,8 @@ import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
+import frc.robot.subsystems.grabber.Arms;
+import frc.robot.subsystems.grabber.Wheels;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -39,6 +41,8 @@ public class RobotContainer {
   // The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
+  private final Arms m_grabberArms = new Arms();
+  private final Wheels m_grabberWheels = new Wheels();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
@@ -63,6 +67,8 @@ public class RobotContainer {
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
+    m_grabberArms.setDefaultCommand(new RunCommand(() -> m_grabberArms.stop(), m_grabberArms));
+    m_grabberWheels.setDefaultCommand(new RunCommand(() -> m_grabberWheels.stop(), m_grabberWheels));
   }
 
   /**
@@ -92,6 +98,22 @@ public class RobotContainer {
     new Trigger(() -> m_driverController.getPOV() == 180)
         .whileTrue(new RunCommand(
             () -> m_elevator.down(), m_elevator));
+    // Press Y to raise arms
+    new Trigger(() -> m_driverController.getYButton())
+        .whileTrue(new RunCommand(
+            () -> m_grabberArms.raiseArms(), m_grabberArms));
+    // Press A to lower arms
+    new Trigger(() -> m_driverController.getAButton())
+        .whileTrue(new RunCommand(
+            () -> m_grabberArms.lowerArms(), m_grabberArms));
+    // Press X to spin grabber wheels inward
+    new Trigger(() -> m_driverController.getXButton())
+        .whileTrue(new RunCommand(
+            () -> m_grabberWheels.in(), m_grabberWheels));
+    // Press B to spin grabber wheels outward
+    new Trigger(() -> m_driverController.getBButton())
+        .whileTrue(new RunCommand(
+            () -> m_grabberWheels.out(), m_grabberWheels));
   }
 
   /**
