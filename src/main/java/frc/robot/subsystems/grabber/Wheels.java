@@ -42,7 +42,7 @@ public class Wheels extends SubsystemBase {
     private void setWheelSpeed(double speed) {
         // We need the wheels to spin in opposite rotations,
         // so we invert one of them.
-        leftSpark.set(speed);
-        rightSpark.set(-speed);
+        leftSpark.set(-speed);
+        rightSpark.set(speed);
     }
 }

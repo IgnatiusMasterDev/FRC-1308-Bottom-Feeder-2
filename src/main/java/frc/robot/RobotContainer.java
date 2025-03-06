@@ -111,7 +111,7 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_grabberWheels.in(), m_grabberWheels));
     // Press B to spin grabber wheels outward
-    new Trigger(() -> m_driverController.getYButton())
+    new Trigger(() -> m_driverController.getBButton())
         .whileTrue(new RunCommand(
             () -> m_grabberWheels.out(), m_grabberWheels));
   }
