@@ -96,6 +96,15 @@ public final class Constants {
     public static final double kElevatorSpeed = 1;
   }
 
+  public static final class GrabberConstants {
+    public static final int kArmCanId = 16;
+    public static final int kLeftCanId = 17;
+    public static final int kRightCanId = 18;
+
+    public static final double kArmSpeed = .2;
+    public static final double kWheelSpeed = .6;
+  }
+
   public static final class OIConstants {
     public static final int kDriverControllerPort = 0;
     public static final double kDriveDeadband = 0.05;
