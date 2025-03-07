@@ -1,20 +1,20 @@
 package frc.robot.subsystems.grabber;
 
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.GrabberConstants;
 
-public class Arms extends SubsystemBase {
+public class ArmsSubsystem extends SubsystemBase {
     // Arm-extension motor
     private final TalonFX armTalon = new TalonFX(GrabberConstants.kArmCanId);
 
-    private final Encoder encoder = new Encoder(2, 3, false, EncodingType.k2X);
+    private final Encoder encoder = new Encoder(1, 7);
 
     // Network tables publishing
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -26,6 +26,14 @@ public class Arms extends SubsystemBase {
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
         .publish();
+
+    /**
+     * Creates a new ArmSubsystem with motors
+     * configured to break when idle.
+     */
+    public ArmsSubsystem() {
+        armTalon.setNeutralMode(NeutralModeValue.Brake);
+    }
     
     @Override
     public void periodic() {
@@ -42,6 +50,11 @@ public class Arms extends SubsystemBase {
         return encoder.getDistance();
     }
 
+    /**
+     * Returns the current velocity of the encoder.
+     * 
+     * @return The current velocity of the encoder.
+     */
     private double getVelocity() {
         return encoder.getRate();
     }
