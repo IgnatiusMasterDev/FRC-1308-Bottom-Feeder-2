@@ -22,7 +22,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private DigitalInput topLimitSwitch = new DigitalInput(9);
     private DigitalInput bottomLimitSwitch = new DigitalInput(8);
 
-    private final Encoder encoder = new Encoder(0, 1, false, EncodingType.k2X);
+    private final Encoder encoder = new Encoder(0, 6, false, EncodingType.k2X);
 
     // Network tables publishing
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -66,9 +66,9 @@ public class ElevatorSubsystem extends SubsystemBase {
      *  
      * @return true if the elevator is rising.
      */
-    public boolean up() {
+    public boolean up(double speed) {
         if (!atTop()) {
-            setElevatorSpeed(ElevatorConstants.kElevatorSpeed);
+            setElevatorSpeed(speed);
             return true;
         } else {
             stop();
@@ -82,9 +82,9 @@ public class ElevatorSubsystem extends SubsystemBase {
      * 
      * @return true if the elevator is lowering.
      */
-    public boolean down() {
+    public boolean down(double speed) {
         if (!atBottom()) {
-            setElevatorSpeed(-ElevatorConstants.kElevatorSpeed);
+            setElevatorSpeed(-speed);
             return true;
         } else {
             stop();

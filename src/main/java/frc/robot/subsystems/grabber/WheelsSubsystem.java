@@ -8,7 +8,7 @@ import com.revrobotics.spark.SparkMax;
 
 import frc.robot.Constants.GrabberConstants;
 
-public class Wheels extends SubsystemBase {
+public class WheelsSubsystem extends SubsystemBase {
     // Talons that spin the wheels
     private final SparkMax leftSpark = new SparkMax(GrabberConstants.kLeftCanId, MotorType.kBrushless);
     private final SparkMax rightSpark = new SparkMax(GrabberConstants.kRightCanId, MotorType.kBrushless);
@@ -44,5 +44,16 @@ public class Wheels extends SubsystemBase {
         // so we invert one of them.
         leftSpark.set(-speed);
         rightSpark.set(speed);
+    }
+
+    /**
+     * Returns a value between -1 and 1. A positive value means the wheels
+     * are spinning inward and a negative value means the
+     * wheels are spinning outward.
+     * 
+     * @return The wheel speed between -1 and 1.
+     */
+    public double getWheelSpeed() {
+        return rightSpark.get();
     }
 }
