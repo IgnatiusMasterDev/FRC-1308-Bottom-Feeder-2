@@ -75,7 +75,7 @@ public class ArmsSubsystem extends SubsystemBase {
      * Begins to raise the grabber arms. The grabber arms will not raise or will
      * stop raising if they are in the fully raised position.
      */
-    public void raiseArms() {
+    public void raise() {
         if (!fullyRaised()) {
             armTalon.set(GrabberConstants.kArmSpeed);
         } else {
@@ -87,7 +87,7 @@ public class ArmsSubsystem extends SubsystemBase {
      * Begins to lower the grabber arms. The grabber arms will not lower
      * or will stop lowering if they are in the fully lowered position.
      */
-    public void lowerArms() {
+    public void lower() {
         if (!fullyLowered()) {
             armTalon.set(-GrabberConstants.kArmSpeed);
         } else {
@@ -107,7 +107,7 @@ public class ArmsSubsystem extends SubsystemBase {
      * 
      * @return true if the grabber arms are fully raised.
      */
-    private boolean fullyRaised() {
+    public boolean fullyRaised() {
         return encoder.get() > GrabberConstants.upperThreshold && encoder.get() < .5;
     }
 
@@ -116,7 +116,7 @@ public class ArmsSubsystem extends SubsystemBase {
      * 
      * @return true if the grabber arms are fully lowered.
      */
-    private boolean fullyLowered() {
+    public boolean fullyLowered() {
         return encoder.get() < GrabberConstants.lowerThreshold && encoder.get() > .5;
     }
 }
