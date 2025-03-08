@@ -8,8 +8,8 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.CounterBase.EncodingType;
+import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ElevatorConstants;
 
@@ -22,7 +22,12 @@ public class ElevatorSubsystem extends SubsystemBase {
     private DigitalInput topLimitSwitch = new DigitalInput(9);
     private DigitalInput bottomLimitSwitch = new DigitalInput(8);
 
-    private final Encoder encoder = new Encoder(0, 6, false, EncodingType.k2X);
+    // Encoder and positioning variables
+    private final DutyCycleEncoder encoder = new DutyCycleEncoder(ElevatorConstants.kElevatorEncoderChannelId);
+    private boolean isCalibrated = false;
+    private double encoderOffset;
+    private double previousPosition = encoder.get();
+    private int rotationsSinceStart = 0;
 
     // Network tables publishing
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -48,16 +53,55 @@ public class ElevatorSubsystem extends SubsystemBase {
     public ElevatorSubsystem() {
         m_talon1.setNeutralMode(NeutralModeValue.Brake);
         m_talon2.setNeutralMode(NeutralModeValue.Brake);
+        encoder.setInverted(true);
     }
 
     @Override
     public void periodic() {
         // Publish values to NetworkTables
-        encoderPublisher.set(encoder.getDistance());
-        velocityPublisher.set(encoder.getRate());
+        encoderPublisher.set(getPosition());
+        velocityPublisher.set(getVelocity());
         topLimitSwitchPublisher.set(atTop());
         bottomLimitSwitchPublisher.set(atBottom());
 
+        // Calibrate elevator if it needs to be
+        if (!isCalibrated) {
+            new InstantCommand(() -> down(1), this).schedule();
+            if (atBottom()) {
+                isCalibrated = true;
+                encoderOffset = encoder.get();
+                rotationsSinceStart = 0;
+                stop();
+            }
+        }
+    }
+
+    /**
+     * Returns the position of the elevator.
+     * 
+     * <p>This method MUST be called in the periodic method in order to function properly.
+     * 
+     * @return the position of the elevator in rotations.
+     */
+    private double getPosition() {
+        double delta = encoder.get() - previousPosition;
+        previousPosition = encoder.get();
+        if (getVelocity() > 0 && delta < 0 && Math.abs(delta) > .1) {
+            rotationsSinceStart++;
+        } else if (getVelocity() < 0 && delta > 0 && Math.abs(delta) > .1) {
+            rotationsSinceStart--;
+        }
+        return rotationsSinceStart + encoder.get() - encoderOffset; // TODO convert from rotations to height
+    }
+
+    /**
+     * Returns the current speed of the elevator as a value between -1 and 1 where
+     * a negative value is going down and a positive value is up.
+     * 
+     * @return the velocity of the elevator. Values are between -1 and 1.
+     */
+    private double getVelocity() {
+        return m_talon1.get();
     }
 
     /**
@@ -117,7 +161,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is all the way up
      */
     private boolean atTop() {
-        return topLimitSwitch.get();
+        return topLimitSwitch.get() || getPosition() >= ElevatorConstants.kRotationThreshold;
     }
 
     /**

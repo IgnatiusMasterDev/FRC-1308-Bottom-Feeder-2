@@ -92,14 +92,17 @@ public final class Constants {
 
     public static final int kTopLimitSwitchChannelId = 8;
     public static final int kBottomLimitSwitchChannelId = 9;
+    public static final int kElevatorEncoderChannelId = 0;
 
     public static final double kElevatorSpeed = 1;
+    public static final double kRotationThreshold = 3.5;
   }
 
   public static final class GrabberConstants {
     public static final int kArmCanId = 16;
     public static final int kLeftCanId = 17;
     public static final int kRightCanId = 18;
+    public static final int kGrabberArmsEncoderChannelId = 1;
 
     public static final double kArmSpeed = .2;
     public static final double kWheelSpeed = .6;
