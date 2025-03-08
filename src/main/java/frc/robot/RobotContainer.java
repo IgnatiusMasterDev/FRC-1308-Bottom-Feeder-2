@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.PS4Controller.Button;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.commands.ToggleArmsCommand;
 import frc.robot.commands.ToggleWheelsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -106,19 +107,23 @@ public class RobotContainer {
     // Press right bumper to raise arms
     new Trigger(() -> m_operatorController.getRightBumperButton())
         .whileTrue(new RunCommand(
-            () -> m_grabberArms.raiseArms(), m_grabberArms));
+            () -> m_grabberArms.raise(), m_grabberArms));
     // Press left bumper to lower arms
     new Trigger(() -> m_operatorController.getLeftBumperButton())
         .whileTrue(new RunCommand(
-            () -> m_grabberArms.lowerArms(), m_grabberArms));
+            () -> m_grabberArms.lower(), m_grabberArms));
+    // Press B to toggle arms up or down; 
+    ToggleArmsCommand toggleArms = new ToggleArmsCommand(false, m_grabberArms);
+    new Trigger(() -> m_operatorController.getBButton())
+        .onTrue(toggleArms);
     
-    ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
-    ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
 
     // Press A to spin grabber wheels inward
+    ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
     new Trigger(() -> m_operatorController.getAButton())
         .onTrue(spinInward);
     // Press X to spin grabber wheels outward
+    ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
     new Trigger(() -> m_operatorController.getXButton())
         .toggleOnTrue(spinOutward);
   }
