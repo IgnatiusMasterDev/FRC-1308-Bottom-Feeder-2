@@ -19,8 +19,8 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final TalonFX m_talon1 = new TalonFX(ElevatorConstants.kTalon1CanId);
     private final TalonFX m_talon2 = new TalonFX(ElevatorConstants.kTalon2CanId);
 
-    private DigitalInput topLimitSwitch = new DigitalInput(9);
-    private DigitalInput bottomLimitSwitch = new DigitalInput(8);
+    private DigitalInput topLimitSwitch = new DigitalInput(ElevatorConstants.kTopLimitSwitchChannelId);
+    private DigitalInput bottomLimitSwitch = new DigitalInput(ElevatorConstants.kBottomLimitSwitchChannelId);
 
     // Encoder and positioning variables
     private final DutyCycleEncoder encoder = new DutyCycleEncoder(ElevatorConstants.kElevatorEncoderChannelId);

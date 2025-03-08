@@ -90,8 +90,8 @@ public final class Constants {
     public static final int kTalon1CanId = 19;
     public static final int kTalon2CanId = 20;
 
-    public static final int kTopLimitSwitchChannelId = 8;
-    public static final int kBottomLimitSwitchChannelId = 9;
+    public static final int kTopLimitSwitchChannelId = 9;
+    public static final int kBottomLimitSwitchChannelId = 8;
     public static final int kElevatorEncoderChannelId = 0;
 
     public static final double kElevatorSpeed = 1;
