@@ -41,14 +41,16 @@ import java.util.List;
  */
 public class RobotContainer {
   // The robot's subsystems
-  private final DriveSubsystem m_robotDrive = new DriveSubsystem();
-  private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
-  private final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
-  private final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
+  /* The subsystems and controllers sometimes need to be accessed by
+   * commands, so they are made public so that they can be accessed. */
+  public final DriveSubsystem m_robotDrive = new DriveSubsystem();
+  public final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
+  public final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
+  public final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
 
   // The driver's controller
-  XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
-  XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
+  public XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
+  public XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
