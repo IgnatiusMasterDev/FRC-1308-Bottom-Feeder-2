@@ -9,9 +9,9 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 /**
  * Encapsulates the objects and methods associated with the robot's vision.
  */
-public class Vision {
+public class PhotonVision {
     private final PhotonCamera m_camera = new PhotonCamera("camera0");
-
+    
     /**
      * Returns a list of visible AprilTags. If no AprilTags are currently visible,
      * then this method returns {@code null}, so usually {@code aprilTagsVisible()} must be

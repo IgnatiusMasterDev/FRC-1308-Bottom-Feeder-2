@@ -10,7 +10,7 @@ import frc.robot.Configs;
 import frc.robot.Constants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.drive.DriveSubsystem;
-import frc.robot.subsystems.drive.Vision;
+import frc.robot.subsystems.drive.PhotonVision;
 
 /**
  * This command swivels the robot until it is facing the specified AprilTag, if the
@@ -21,7 +21,7 @@ public class AutoAimCommand extends Command {
     
     private final XboxController m_driverController;
     private final DriveSubsystem m_robotDrive;
-    private final Vision m_vision;
+    private final PhotonVision m_vision;
     private final int aprilTagId;
 
     private final double yawTolerance;
