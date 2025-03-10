@@ -39,10 +39,10 @@ public class PhotonVision {
     }
 
     /**
-     * Returns the robot's pose as estimated from PhotonVision, wrapped in an Optional<EstimatedRobotPose>.
+     * Returns the robot's pose as estimated from PhotonVision, wrapped in an Optional EstimatedRobotPose.
      * To access the actual Pose3d, use {@code getEstimatedPose().get().estimatedPose}.
      * 
-     * @return the robot's pose wrapped in an Optional<EstimatedRobotPose>.
+     * @return the robot's pose wrapped in an Optional EstimatedRobotPose.
      */
     public Optional<EstimatedRobotPose> getEstimatedPose() {
         if (prevEstimatedPose != null) {
