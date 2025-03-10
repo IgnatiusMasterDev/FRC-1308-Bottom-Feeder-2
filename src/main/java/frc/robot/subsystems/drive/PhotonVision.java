@@ -12,17 +12,17 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
+import frc.robot.Constants.VisionConstants;
 
 /**
  * Encapsulates the objects and methods associated with the robot's vision.
+ * This class is only loosely associated with the drive system, but that's the best
+ * I could come up with for where to put this.
  */
 public class PhotonVision {
-    private final PhotonCamera m_camera = new PhotonCamera("camera0");
-    private final Transform3d robotToCam = new Transform3d(0, 0, .915, new Rotation3d()); // technically, the camera is not at x=0, but we're going to treat it as such.
+    private final PhotonCamera m_camera = new PhotonCamera(VisionConstants.kPhotonCameraName);
     private AprilTagFieldLayout field; // Because of a possible IO Exception, it is not possible for us to make this final, even though it should be.
-    private final PhotonPoseEstimator poseEstimator = new PhotonPoseEstimator(field, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, robotToCam);
+    private final PhotonPoseEstimator poseEstimator = new PhotonPoseEstimator(field, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, VisionConstants.kRobotToCamTransform);
 
     private Pose3d prevEstimatedPose;
 
@@ -40,7 +40,8 @@ public class PhotonVision {
 
     /**
      * Returns the robot's pose as estimated from PhotonVision, wrapped in an Optional EstimatedRobotPose.
-     * To access the actual Pose3d, use {@code getEstimatedPose().get().estimatedPose}.
+     * To access the actual Pose3d, use {@code getEstimatedPose().get().estimatedPose}. If no AprilTags
+     * are in sight, then the Option.get() method throws an error.
      * 
      * @return the robot's pose wrapped in an Optional EstimatedRobotPose.
      */
@@ -57,7 +58,7 @@ public class PhotonVision {
     }
 
     /**
-     * Returns a list of visible AprilTags. If no AprilTags are currently visible,
+     * Returns a list of visible AprilTags as {@link PhotonTrackedTarget}s. If no AprilTags are currently visible,
      * then this method returns {@code null}, so usually {@code aprilTagsVisible()} must be
      * called before this method is called.
      * 
@@ -82,6 +83,6 @@ public class PhotonVision {
      * @return the latest {@link PhotonPipielineResult}.
      */
     private PhotonPipelineResult getLatestResult() {
-        return m_camera.getLatestResult();
+        return m_camera.getLatestResult(); // TODO PhotonCamera.getLatestResult() is deprecated
     }
 }
