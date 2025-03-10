@@ -118,7 +118,12 @@ public class DriveSubsystem extends SubsystemBase {
    * @param timestampSeconds The timestamp of the vision measurement in seconds.
    */
   public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
-    m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
+    try {
+      m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
+    } catch (Exception e) {
+      System.out.println("Failed to unwrap EstimatedRobotPose from Optional wrapper");
+      e.printStackTrace();
+    }
   }
 
   /**

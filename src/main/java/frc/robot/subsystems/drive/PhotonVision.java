@@ -14,7 +14,6 @@ import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.wpilibj.Filesystem;
 
 /**
  * Encapsulates the objects and methods associated with the robot's vision.
@@ -32,9 +31,10 @@ public class PhotonVision {
      */
     public PhotonVision() {
         try {
-            field = new AprilTagFieldLayout(Filesystem.getDeployDirectory().toString() + "/reefscape-layout-welded.json");
+            field = new AprilTagFieldLayout("reefscape-layout-welded.json");
         } catch (Exception e) {
             System.out.println("Failed to load AprilTag Field Layout");
+            e.printStackTrace();
         }
     }
 
@@ -50,7 +50,9 @@ public class PhotonVision {
         }
 
         Optional<EstimatedRobotPose> estimatedRobotPose = poseEstimator.update(getLatestResult());
-        prevEstimatedPose = estimatedRobotPose.get().estimatedPose;
+        try {
+            prevEstimatedPose = estimatedRobotPose.get().estimatedPose;
+        } catch (Exception e) {}
         return estimatedRobotPose;
     }
 
