@@ -7,6 +7,10 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
+import java.util.Optional;
+
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.hal.HAL;
@@ -89,6 +93,7 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
+    addVisionMeasurement(m_cameraVision.getEstimatedPose()); // supplement pose estimator with PhotonVision pose estimation
     
     // Publish DriveSubsystem telemetry to NetworkTables
     headingPublisher.set(new Rotation2d[] {getHeading()});
@@ -112,8 +117,8 @@ public class DriveSubsystem extends SubsystemBase {
    * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
    * @param timestampSeconds The timestamp of the vision measurement in seconds.
    */
-  public void addVisionMeasurement(Pose2d visionRobotPoseMeters, double timestampSeconds) {
-    m_poseEstimator.addVisionMeasurement(visionRobotPoseMeters, timestampSeconds);
+  public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
+    m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
   }
 
   /**
