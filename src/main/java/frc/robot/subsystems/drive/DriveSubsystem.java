@@ -60,7 +60,7 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Vision, odometry, and pose estimator
+  // Vision and pose estimator
   public PhotonVision m_cameraVision = new PhotonVision(); // public so that commands can access it.
   private SwerveDrivePoseEstimator m_poseEstimator;
 
@@ -118,12 +118,11 @@ public class DriveSubsystem extends SubsystemBase {
    * @param timestampSeconds The timestamp of the vision measurement in seconds.
    */
   public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
+    // If there are no AprilTags in view, then this code segment will throw an error
+    // because calling estimatedRobotPose.get() will return nothing, basically.
     try {
       m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
-    } catch (Exception e) {
-      System.out.println("Failed to unwrap EstimatedRobotPose from Optional wrapper");
-      e.printStackTrace();
-    }
+    } catch (Exception e) {}
   }
 
   /**
