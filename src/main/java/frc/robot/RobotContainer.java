@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.PS4Controller.Button;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.ToggleArmsCommand;
 import frc.robot.commands.ToggleWheelsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
@@ -27,6 +28,7 @@ import frc.robot.subsystems.grabber.WheelsSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -124,10 +126,13 @@ public class RobotContainer {
     ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
     new Trigger(() -> m_operatorController.getAButton())
         .onTrue(spinInward);
-    // Press X to spin grabber wheels outward
+
+    // Press X to spin grabber wheels outward; if facing a processor, the robot will auto-align.
     ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
-    new Trigger(() -> m_operatorController.getXButton())
-        .toggleOnTrue(spinOutward);
+    AutoAimCommand alignToBlueProcessor = new AutoAimCommand(16, .5, this);
+    AutoAimCommand alignToRedProcessor = new AutoAimCommand(2, .5, this);
+    SequentialCommandGroup ejectAlgae = new SequentialCommandGroup(alignToBlueProcessor, alignToRedProcessor, spinOutward);
+    new Trigger(() -> m_operatorController.getXButton()).onTrue(ejectAlgae);
   }
 
   /**
