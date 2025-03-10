@@ -56,7 +56,8 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Odometry and Pose estimator
+  // Vision, odometry, and pose estimator
+  public Vision m_cameraVision = new Vision(); // public so that commands can access it.
   private SwerveDrivePoseEstimator m_poseEstimator;
 
   // NetworkTable variables
