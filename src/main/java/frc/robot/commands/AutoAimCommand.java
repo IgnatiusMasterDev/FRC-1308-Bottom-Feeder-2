@@ -33,7 +33,7 @@ public class AutoAimCommand extends Command {
      * 
      * @param aprilTagId the ID of the AprilTag to recognize and aim at. This command will only work for this tag.
      * @param yawTolerance the maximum error (in degrees) to tolerate being off. Otherwise, the robot will correct itself.
-     * @param robot the robotContainer object.
+     * @param robot the RobotContainer object.
      */
     public AutoAimCommand(int aprilTagId, double yawTolerance, RobotContainer robot) {
         m_driverController = robot.m_driverController;
@@ -41,6 +41,22 @@ public class AutoAimCommand extends Command {
         m_vision = m_robotDrive.m_cameraVision;
         this.aprilTagId = aprilTagId;
         this.yawTolerance = yawTolerance;
+
+        addRequirements(m_robotDrive);
+    }
+
+    /**
+     * Constructs a new AutoAim command for the specified AprilTag with a yaw tolerance of .5 degrees.
+     * 
+     * @param aprilTagId the ID of the AprilTag to recognize and aim at. This command will only work for this tag.
+     * @param robot the RobotContainer object.
+     */
+    public AutoAimCommand(int aprilTagId, RobotContainer robot) {
+        m_driverController = robot.m_driverController;
+        m_robotDrive = robot.m_robotDrive;
+        m_vision = m_robotDrive.m_cameraVision;
+        this.aprilTagId = aprilTagId;
+        this.yawTolerance = .5;
 
         addRequirements(m_robotDrive);
     }

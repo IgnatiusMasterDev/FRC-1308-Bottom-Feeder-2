@@ -129,8 +129,8 @@ public class RobotContainer {
 
     // Press X to spin grabber wheels outward; if facing a processor, the robot will auto-align.
     ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
-    AutoAimCommand alignToBlueProcessor = new AutoAimCommand(16, .5, this);
-    AutoAimCommand alignToRedProcessor = new AutoAimCommand(2, .5, this);
+    AutoAimCommand alignToBlueProcessor = new AutoAimCommand(16, this);
+    AutoAimCommand alignToRedProcessor = new AutoAimCommand(2, this);
     SequentialCommandGroup ejectAlgae = new SequentialCommandGroup(alignToBlueProcessor, alignToRedProcessor, spinOutward);
     new Trigger(() -> m_operatorController.getXButton()).onTrue(ejectAlgae);
   }
