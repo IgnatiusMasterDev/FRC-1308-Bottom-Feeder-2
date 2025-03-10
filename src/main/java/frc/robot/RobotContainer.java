@@ -117,7 +117,7 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_grabberArms.lower(), m_grabberArms));
     // Press B to toggle arms up or down; 
-    ToggleArmsCommand toggleArms = new ToggleArmsCommand(false, m_grabberArms);
+    ToggleArmsCommand toggleArms = new ToggleArmsCommand(m_grabberArms);
     new Trigger(() -> m_operatorController.getBButton())
         .onTrue(toggleArms);
     
