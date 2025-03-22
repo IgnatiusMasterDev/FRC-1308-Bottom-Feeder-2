@@ -104,15 +104,21 @@ public class ElevatorSubsystem extends SubsystemBase {
         return m_talon1.get();
     }
 
+
+
     /**
      * Begin raising the elevator. The elevator will not rise or will stop moving if the
      * top limit switch is pressed.
      *  
      * @return true if the elevator is rising.
      */
+    
     public boolean up(double speed) {
+        double newSpeed = (ElevatorConstants.kAlpha * speed) + 
+        ((1.0 - ElevatorConstants.kAlpha) * getVelocity());
+         
         if (!atTop()) {
-            setElevatorSpeed(speed);
+            setElevatorSpeed(newSpeed);
             return true;
         } else {
             stop();
@@ -127,8 +133,10 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is lowering.
      */
     public boolean down(double speed) {
+        double newSpeed = (ElevatorConstants.kAlpha * -speed) + 
+        ((1.0 - ElevatorConstants.kAlpha) * getVelocity());
         if (!atBottom()) {
-            setElevatorSpeed(-speed);
+            setElevatorSpeed(newSpeed);
             return true;
         } else {
             stop();
@@ -161,7 +169,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is all the way up
      */
     private boolean atTop() {
-        return topLimitSwitch.get() || getPosition() >= ElevatorConstants.kRotationThreshold;
+        return !topLimitSwitch.get() || getPosition() >= ElevatorConstants.kRotationThreshold;
     }
 
     /**

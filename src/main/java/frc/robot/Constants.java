@@ -25,8 +25,8 @@ public final class Constants {
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
-    public static final double kMaxSpeedMetersPerSecond = 4.8;
-    public static final double kMaxAngularSpeed = 2 * Math.PI; // radians per second
+    public static final double kMaxSpeedMetersPerSecond = 5.5;
+    public static final double kMaxAngularSpeed = 2 * Math.PI*1.5; // radians per second
 
     // Chassis configuration
     public static final double kTrackWidth = Units.inchesToMeters(23);
@@ -94,8 +94,10 @@ public final class Constants {
     public static final int kBottomLimitSwitchChannelId = 8;
     public static final int kElevatorEncoderChannelId = 0;
 
-    public static final double kElevatorSpeed = 1;
+    public static final double kElevatorSpeed = .7;
     public static final double kRotationThreshold = 3.5;
+
+    public static final double kAlpha = .9;
   }
 
   public static final class GrabberConstants {
@@ -118,8 +120,8 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
-    public static final double kMaxSpeedMetersPerSecond = 3;
-    public static final double kMaxAccelerationMetersPerSecondSquared = 3;
+    public static final double kMaxSpeedMetersPerSecond = .5;
+    public static final double kMaxAccelerationMetersPerSecondSquared = 0.1;
     public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
     public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
 
