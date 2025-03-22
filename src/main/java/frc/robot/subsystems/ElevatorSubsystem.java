@@ -3,13 +3,14 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ElevatorConstants;
@@ -25,12 +26,15 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     // Encoder and positioning variables
     // private final DutyCycleEncoder encoder = new DutyCycleEncoder(ElevatorConstants.kElevatorEncoderChannelId);
-    private final Encoder encoder = new Encoder(ElevatorConstants.kElevatorEncoderChannelAId,
+    private final Encoder m_Encoder = new Encoder(ElevatorConstants.kElevatorEncoderChannelAId,
                                                 ElevatorConstants.kElevatorEncoderChannelBId,
                                                 false,
                                                 Encoder.EncodingType.k1X);
-    private boolean isCalibrated = false;
-    private double lastSetSpeed = 0.0;
+    private boolean m_isCalibrated = false;
+    private double m_lastSetSpeed = 0.0;
+
+    private final PIDController m_HeightController = new PIDController(1.0,0,0);
+
 
     // Network tables publishing
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -59,7 +63,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     public ElevatorSubsystem() {
         m_talon1.setNeutralMode(NeutralModeValue.Brake);
         m_talon2.setNeutralMode(NeutralModeValue.Brake);
-        encoder.setDistancePerPulse(ElevatorConstants.kDistancePerPulse);
+        m_Encoder.setDistancePerPulse(ElevatorConstants.kDistancePerPulse);
     }
 
     @Override
@@ -69,14 +73,14 @@ public class ElevatorSubsystem extends SubsystemBase {
         velocityPublisher.set(getVelocity());
         // topLimitSwitchPublisher.set(atTop());
         bottomLimitSwitchPublisher.set(atBottom());
-        lastSetSpeedPublisher.set(lastSetSpeed);
+        lastSetSpeedPublisher.set(m_lastSetSpeed);
 
         // Calibrate elevator if it needs to be
-        if (!isCalibrated) {
+        if (!m_isCalibrated) {
             new InstantCommand(() -> down(ElevatorConstants.kElevatorHomingSpeed, true), this).schedule();
             if (atBottom()) {
-                isCalibrated = true;
-                encoder.reset();
+                m_isCalibrated = true;
+                m_Encoder.reset();
                 stop();
             }
         }
@@ -90,7 +94,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return the position of the elevator in rotations.
      */
     private double getPosition() {
-        return encoder.getDistance() + ElevatorConstants.kHeightOffset;
+        return m_Encoder.getDistance() + ElevatorConstants.kHeightOffset;
     }
 
     /**
@@ -116,7 +120,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         boolean inAttenuationZone = ratio >= (1.0 - ElevatorConstants.kAttenuationBand);
         double speedMultiplier = inAttenuationZone ? ElevatorConstants.kAttenuationMultiplier : 1.0;
         double newSpeed = (ElevatorConstants.kAlpha * speedMultiplier * speed) + 
-            ((1.0 - ElevatorConstants.kAlpha) * lastSetSpeed);
+            ((1.0 - ElevatorConstants.kAlpha) * m_lastSetSpeed);
         
         if (!atTop()) {
             setElevatorSpeed(newSpeed);
@@ -138,7 +142,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         boolean inAttenuationZone = ratio <= ElevatorConstants.kAttenuationBand;
         double speedMultiplier = (!isHoming && inAttenuationZone) ? ElevatorConstants.kAttenuationMultiplier : 1.0;
         double newSpeed = (ElevatorConstants.kAlpha * speedMultiplier * -speed) + 
-            ((1.0 - ElevatorConstants.kAlpha) * lastSetSpeed);
+            ((1.0 - ElevatorConstants.kAlpha) * m_lastSetSpeed);
 
         if (!atBottom()) {
             setElevatorSpeed(newSpeed);
@@ -164,7 +168,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private void setElevatorSpeed(double speed) {
         // The motors have opposite orientations on the robot,
         // so one must be inverted to spin in the same direction
-        lastSetSpeed = speed;
+        m_lastSetSpeed = speed;
         m_talon1.set(speed);
         m_talon2.set(-speed);
     }
@@ -186,5 +190,23 @@ public class ElevatorSubsystem extends SubsystemBase {
      */
     private boolean atBottom() {
         return bottomLimitSwitch.get();
+    }
+
+
+    public FunctionalCommand getSetElevatorHeightCommand(double height) {
+        return new FunctionalCommand(
+            () -> {m_HeightController.reset();},
+            () -> {
+                double desiredSpeed = m_HeightController.calculate(getPosition(), height);
+                if (desiredSpeed <= 0.0) {
+                    down(-desiredSpeed, false);
+                } else {
+                    up(desiredSpeed);
+                }
+            },
+            (interrupted) -> stop(),
+            () -> {return Math.abs(getPosition() - height) < ElevatorConstants.kTolerance;},
+            this
+        );
     }
 }

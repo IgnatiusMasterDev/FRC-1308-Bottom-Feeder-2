@@ -26,7 +26,6 @@ public class Robot extends TimedRobot {
   private RobotContainer m_robotContainer;
 
   UsbCamera camera1;
-  UsbCamera camera2;
 
   VideoSink server;
 
@@ -41,12 +40,9 @@ public class Robot extends TimedRobot {
     m_robotContainer = new RobotContainer();
 
     camera1 = CameraServer.startAutomaticCapture(0);
-    camera2 = CameraServer.startAutomaticCapture(1);
     camera1.setResolution(160, 120);
-    camera2.setResolution(160, 120);
     server = CameraServer.getServer();
     camera1.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen); 
-    camera2.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen);
 
   }
 

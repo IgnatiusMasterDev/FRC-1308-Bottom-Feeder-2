@@ -108,6 +108,7 @@ public final class Constants {
     public static final double kMaxHeight = 1.30;
 
     public static final double kAlpha = .025;
+    public static final double kTolerance = 0.01;
   }
 
   public static final class GrabberConstants {
