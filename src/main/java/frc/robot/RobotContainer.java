@@ -101,7 +101,7 @@ public class RobotContainer {
     // Press left trigger to lower elevator
     new Trigger(() -> m_operatorController.getLeftTriggerAxis() > 0)
         .whileTrue(new RunCommand(
-            () -> m_elevator.down(m_operatorController.getLeftTriggerAxis()), m_elevator));
+            () -> m_elevator.down(m_operatorController.getLeftTriggerAxis(), false), m_elevator));
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms

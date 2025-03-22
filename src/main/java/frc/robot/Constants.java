@@ -93,11 +93,21 @@ public final class Constants {
     public static final int kTopLimitSwitchChannelId = 9;
     public static final int kBottomLimitSwitchChannelId = 8;
     public static final int kElevatorEncoderChannelId = 0;
+    public static final int kElevatorEncoderChannelAId = 2;
+    public static final int kElevatorEncoderChannelBId = 3;
 
     public static final double kElevatorSpeed = .7;
-    public static final double kRotationThreshold = 3.5;
+    public static final double kAttenuationBand = 0.1;
+    public static final double kAttenuationMultiplier = 0.2;
+    public static final double kElevatorHomingSpeed = .2;
+    // 2X encoder, so 1 revolution = 4096 pulses
+    // 24 tooth sprocket, 48.86mm chain to chain diameter
+    // 2 stage elevator
+    public static final double kDistancePerPulse = (2.0 * 0.1535 / 2048.0);
+    public static final double kHeightOffset = 0.23;
+    public static final double kMaxHeight = 1.30;
 
-    public static final double kAlpha = .9;
+    public static final double kAlpha = .025;
   }
 
   public static final class GrabberConstants {
