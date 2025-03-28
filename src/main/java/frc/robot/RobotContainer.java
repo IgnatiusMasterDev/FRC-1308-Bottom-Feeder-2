@@ -24,6 +24,7 @@ import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 import frc.robot.subsystems.grabber.WheelsSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -45,6 +46,7 @@ public class RobotContainer {
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   private final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
   private final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
+  private final VisionSubsystem m_vision = new VisionSubsystem();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
@@ -102,8 +104,8 @@ public class RobotContainer {
     new Trigger(() -> m_operatorController.getLeftTriggerAxis() > 0)
         .whileTrue(new RunCommand(
             () -> m_elevator.down(m_operatorController.getLeftTriggerAxis(), false), m_elevator));
-    new Trigger(() -> m_driverController.getAButton())
-        .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
+    // new Trigger(() -> m_driverController.getAButton())
+    //     .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms
