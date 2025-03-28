@@ -51,6 +51,7 @@ public class RobotContainer {
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
   XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
+  
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -104,6 +105,20 @@ public class RobotContainer {
     new Trigger(() -> m_operatorController.getLeftTriggerAxis() > 0)
         .whileTrue(new RunCommand(
             () -> m_elevator.down(m_operatorController.getLeftTriggerAxis(), false), m_elevator));
+
+    // Press D pad left to set to L2 
+    new Trigger(() -> m_operatorController.getPOV() == 270)
+        .onTrue(m_elevator.getSetElevatorHeightCommand(1));
+
+    //Press D pad up to set to floater 
+    new Trigger(() -> m_operatorController.getPOV() == 0)
+        .onTrue(m_elevator.getSetElevatorHeightCommand(.59));
+
+    //Press D Pad down to set to processor
+    new Trigger(() -> m_operatorController.getPOV() == 180)
+        .onTrue(m_elevator.getSetElevatorHeightCommand(.48));
+        
+        
     // new Trigger(() -> m_driverController.getAButton())
     //     .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
     
@@ -123,13 +138,26 @@ public class RobotContainer {
     
 
     // Press A to spin grabber wheels inward
-    ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
     new Trigger(() -> m_operatorController.getAButton())
-        .onTrue(spinInward);
+    .whileTrue(new RunCommand(
+        () -> m_grabberWheels.in(), m_grabberArms))
+    .whileFalse(new RunCommand(
+        () -> m_grabberWheels.stop(), m_grabberArms));
+
     // Press X to spin grabber wheels outward
-    ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
     new Trigger(() -> m_operatorController.getXButton())
-        .toggleOnTrue(spinOutward);
+    .whileTrue(new RunCommand(
+        () -> m_grabberWheels.out(), m_grabberArms))
+    .whileFalse(new RunCommand(
+        () -> m_grabberWheels.stop(), m_grabberArms));
+
+    //    ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
+    // new Trigger(() -> m_operatorController.getAButton())
+    //    .toggleOnTrue(spinInward);
+    // // Press X to spin grabber wheels outward
+    // ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
+    // new Trigger(() -> m_operatorController.getXButton())
+    //    .toggleOnTrue(spinOutward);
   }
 
   /**
