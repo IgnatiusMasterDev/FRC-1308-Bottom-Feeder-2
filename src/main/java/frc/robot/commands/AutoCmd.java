@@ -1,35 +1,11 @@
 package frc.robot.commands;
-
-import java.util.function.Supplier;
-//import com.ctre.phoenix6.mechanisms.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.mechanisms.swerve.*;  //  1/23/25 used to fix above import for phoenix6
-
-
-/*    REPLACED BY ALTERNATE IMPORTS (SEE BELOW)
-import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-*/
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.Velocity;
-import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.Servo;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;  //Changed to Command from Command
-import frc.robot.Configs.MAXSwerveModule;
-// The editor is reporting errors, but the code still compiles
-import frc.robot.Constants.DriveConstants;
-import frc.robot.Constants.OIConstants;
-//import frc.robot.subsystems.ShootingSubsystem;
+import edu.wpi.first.wpilibj2.command.Command;
+
 import frc.robot.subsystems.drive.DriveSubsystem;
 
-public class AutoCmd extends Command {     //Changed to Command from Command
+public class AutoCmd extends Command {
 
     private int configSwitch = 1;
     // 0 = move forward
