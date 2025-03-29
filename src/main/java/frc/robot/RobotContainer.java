@@ -68,8 +68,7 @@ public class RobotContainer {
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                true),
+                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband)),
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
@@ -86,6 +85,7 @@ public class RobotContainer {
    * {@link JoystickButton}.
    */
   private void configureButtonBindings() {
+    // DRIVER BINDINGS
     // Press right bumper to set wheels in X
     new JoystickButton(m_driverController, Button.kR1.value)
         .whileTrue(new RunCommand(
@@ -95,6 +95,23 @@ public class RobotContainer {
     new Trigger(() -> m_driverController.getRightStickButton())
         .onTrue(new InstantCommand(
             () -> m_robotDrive.zeroHeading(), m_robotDrive));
+
+    // Press right trigger for speed mode
+    new Trigger(() -> m_driverController.getRightTriggerAxis() > 0)
+        .onTrue(new InstantCommand(
+            () -> m_robotDrive.setPrecisionMode(false)));
+
+    // Press right bumper for precision mode
+    new Trigger(() -> m_driverController.getRightBumperButtonPressed())
+        .onTrue(new InstantCommand(
+            () -> m_robotDrive.setPrecisionMode(true)));
+    
+    // Hold left trigger for robot centric
+    new Trigger(() -> m_driverController.getLeftTriggerAxis() > 0)
+        .whileTrue(new InstantCommand(
+            () -> m_robotDrive.setFieldRelative(false)))
+        .whileFalse(new InstantCommand(
+            () -> m_robotDrive.setFieldRelative(true)));
     
     // ELEVATOR BINDINGS
     // Press right trigger to raise elevator
@@ -116,7 +133,7 @@ public class RobotContainer {
 
     //Press D Pad down to set to processor
     new Trigger(() -> m_operatorController.getPOV() == 180)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(.48));
+        .onTrue(m_elevator.getSetElevatorHeightCommand(.5));
         
         
     // new Trigger(() -> m_driverController.getAButton())
@@ -228,7 +245,7 @@ public class RobotContainer {
     m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
 
     // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false));
+    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0));
 
     
   }

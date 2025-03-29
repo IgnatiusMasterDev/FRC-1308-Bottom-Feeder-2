@@ -85,6 +85,9 @@ public class DriveSubsystem extends SubsystemBase {
     .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
     .publish();
 
+  private boolean isPrecisionMode = false;
+  private boolean isFieldRelative = false;
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
@@ -152,23 +155,21 @@ public class DriveSubsystem extends SubsystemBase {
     
   }
   
-  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative) {
+  public void drive(double xSpeed, double ySpeed, double rot) {
     // Convert the commanded speeds into the correct units for the drivetrain
-    double xSpeedDelivered = xSpeed * DriveConstants.kMaxSpeedMetersPerSecond;
-    double ySpeedDelivered = ySpeed * DriveConstants.kMaxSpeedMetersPerSecond;
-    double rotDelivered = rot * DriveConstants.kMaxAngularSpeed;
+    double xSpeedDelivered = xSpeed * DriveConstants.kMaxSpeedMetersPerSecond * (isPrecisionMode ? DriveConstants.kPrecisionSpeedReduction : 1);
+    double ySpeedDelivered = ySpeed * DriveConstants.kMaxSpeedMetersPerSecond * (isPrecisionMode ? DriveConstants.kPrecisionSpeedReduction : 1);
+    double rotDelivered = rot * DriveConstants.kMaxAngularSpeed * (isPrecisionMode ? DriveConstants.kPrecisionRotationReduction : 1);
+
+    // var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
+    //  new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-        
-     new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
-
-    /*var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-        fieldRelative
+        isFieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                 Rotation2d.fromDegrees(getHeading()))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
-     * 
-     */
+     
     SwerveDriveKinematics.desaturateWheelSpeeds(
         swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
     m_frontLeft.setDesiredState(swerveModuleStates[0]);
@@ -185,6 +186,14 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
     m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
     m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
+  }
+
+  public void setPrecisionMode(boolean value) {
+    isPrecisionMode = value;
+  }
+  
+  public void setFieldRelative(boolean value) {
+    isFieldRelative = value;
   }
 
   /**
