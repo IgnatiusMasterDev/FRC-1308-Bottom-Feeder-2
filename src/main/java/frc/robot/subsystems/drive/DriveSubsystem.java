@@ -60,7 +60,7 @@ public class DriveSubsystem extends SubsystemBase {
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
       DriveConstants.kDriveKinematics,
-      Rotation2d.fromDegrees(getHeading()),
+      getHeading(),
       new SwerveModulePosition[] {
           m_frontLeft.getPosition(),
           m_frontRight.getPosition(),
@@ -98,7 +98,7 @@ public class DriveSubsystem extends SubsystemBase {
   public void periodic() {
     // Update the odometry in the periodic block
     m_odometry.update(
-        Rotation2d.fromDegrees(getHeading()),
+        getHeading(),
         new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -107,7 +107,7 @@ public class DriveSubsystem extends SubsystemBase {
         });
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    headingPublisher.set(getHeading());
+    headingPublisher.set(getHeading().getDegrees());
     
     Pose2d[] pose = {getPose()};
     posePublisher.set(pose);
@@ -132,7 +132,7 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void resetOdometry(Pose2d pose) {
     m_odometry.resetPosition(
-        Rotation2d.fromDegrees(getHeading()),
+        getHeading(),
         new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -155,19 +155,31 @@ public class DriveSubsystem extends SubsystemBase {
     
   }
   
-  public void drive(double xSpeed, double ySpeed, double rot) {
+  public void drive(double xSpeed, double ySpeed, double rot, double elevatorHeightPercentage) {
     // Convert the commanded speeds into the correct units for the drivetrain
-    double xSpeedDelivered = xSpeed * DriveConstants.kMaxSpeedMetersPerSecond * (isPrecisionMode ? DriveConstants.kPrecisionSpeedReduction : 1);
-    double ySpeedDelivered = ySpeed * DriveConstants.kMaxSpeedMetersPerSecond * (isPrecisionMode ? DriveConstants.kPrecisionSpeedReduction : 1);
-    double rotDelivered = rot * DriveConstants.kMaxAngularSpeed * (isPrecisionMode ? DriveConstants.kPrecisionRotationReduction : 1);
-
-    // var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-    //  new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
+    double xSpeedDelivered = calculateDelivered(
+      xSpeed, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxSpeedMetersPerSecond,
+      DriveConstants.kPrecisionMaxSpeedReduction,
+      DriveConstants.kElevatorMaxSpeedReduction);
+    double ySpeedDelivered = calculateDelivered(
+      ySpeed, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxSpeedMetersPerSecond,
+      DriveConstants.kPrecisionMaxSpeedReduction,
+      DriveConstants.kElevatorMaxSpeedReduction);
+    double rotDelivered = calculateDelivered(
+      rot, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxAngularSpeed,
+      DriveConstants.kPrecisionMaxRotationReduction,
+      DriveConstants.kElevatorMaxRotationReduction);
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
         isFieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
-                Rotation2d.fromDegrees(getHeading()))
+                getHeading())
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
      
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -176,6 +188,16 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  private double calculateDelivered(double value, double elevatorHeightPercentage, double maxSpeed, double precisionModeReduction, double elevatorReduction) {
+    return value
+        // Adjust based on max speed
+         * maxSpeed
+        // Reduce speed if in precision mode
+         * (isPrecisionMode ? precisionModeReduction : 1)
+        // Reduce speed based on elevator height if in speed mode
+         * (isPrecisionMode ? 1 : 1 - (elevatorHeightPercentage * elevatorReduction));
   }
 
   /**
@@ -260,8 +282,8 @@ public class DriveSubsystem extends SubsystemBase {
    *
    * @return the robot's heading in degrees, from -180 to 180
    */
-  public double getHeading() {
-    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble()).getDegrees();
+  public Rotation2d getHeading() {
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
   }
 
   /**

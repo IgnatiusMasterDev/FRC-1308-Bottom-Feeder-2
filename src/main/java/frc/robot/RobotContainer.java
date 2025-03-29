@@ -17,14 +17,13 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.commands.ToggleArmsCommand;
-import frc.robot.commands.ToggleWheelsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 import frc.robot.subsystems.grabber.WheelsSubsystem;
-import frc.robot.subsystems.VisionSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -46,7 +45,6 @@ public class RobotContainer {
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   private final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
   private final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
-  private final VisionSubsystem m_vision = new VisionSubsystem();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
@@ -68,11 +66,13 @@ public class RobotContainer {
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband)),
+                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
+                m_elevator.getPositionPercentile()),
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
     m_grabberArms.setDefaultCommand(new RunCommand(() -> m_grabberArms.stop(), m_grabberArms));
+    m_grabberWheels.setDefaultCommand(new RunCommand(() -> m_grabberWheels.stop(), m_grabberWheels));
   }
 
   /**
@@ -123,18 +123,21 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_elevator.down(m_operatorController.getLeftTriggerAxis(), false), m_elevator));
 
-    // Press D pad left to set to L2 
-    new Trigger(() -> m_operatorController.getPOV() == 270)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(1));
-
     //Press D pad up to set to floater 
     new Trigger(() -> m_operatorController.getPOV() == 0)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(.59));
+        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight));
 
     //Press D Pad down to set to processor
     new Trigger(() -> m_operatorController.getPOV() == 180)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(.5));
+        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.processorHeight));
         
+    // Press D pad left to set to Coral 1 
+    new Trigger(() -> m_operatorController.getPOV() == 270)
+    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral1Height));
+
+    // Press D pad right to set to Coral 2
+    new Trigger(() -> m_operatorController.getPOV() == 90)
+    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral2Height));
         
     // new Trigger(() -> m_driverController.getAButton())
     //     .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
@@ -157,24 +160,12 @@ public class RobotContainer {
     // Press A to spin grabber wheels inward
     new Trigger(() -> m_operatorController.getAButton())
     .whileTrue(new RunCommand(
-        () -> m_grabberWheels.in(), m_grabberArms))
-    .whileFalse(new RunCommand(
-        () -> m_grabberWheels.stop(), m_grabberArms));
+        () -> m_grabberWheels.in(), m_grabberWheels));
 
     // Press X to spin grabber wheels outward
     new Trigger(() -> m_operatorController.getXButton())
     .whileTrue(new RunCommand(
-        () -> m_grabberWheels.out(), m_grabberArms))
-    .whileFalse(new RunCommand(
-        () -> m_grabberWheels.stop(), m_grabberArms));
-
-    //    ToggleWheelsCommand spinInward = new ToggleWheelsCommand(true, m_grabberWheels);
-    // new Trigger(() -> m_operatorController.getAButton())
-    //    .toggleOnTrue(spinInward);
-    // // Press X to spin grabber wheels outward
-    // ToggleWheelsCommand spinOutward = new ToggleWheelsCommand(false, m_grabberWheels);
-    // new Trigger(() -> m_operatorController.getXButton())
-    //    .toggleOnTrue(spinOutward);
+        () -> m_grabberWheels.out(), m_grabberWheels));
   }
 
   /**
@@ -245,7 +236,7 @@ public class RobotContainer {
     m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
 
     // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0));
+    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
 
     
   }

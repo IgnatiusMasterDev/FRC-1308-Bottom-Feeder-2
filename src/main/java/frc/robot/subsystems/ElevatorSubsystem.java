@@ -91,10 +91,14 @@ public class ElevatorSubsystem extends SubsystemBase {
      * 
      * <p>This method MUST be called in the periodic method in order to function properly.
      * 
-     * @return the position of the elevator in rotations.
+     * @return the position of the elevator in rotations. // TODO this returns in meters; change javadoc
      */
     private double getPosition() {
         return m_Encoder.getDistance() + ElevatorConstants.kHeightOffset;
+    }
+
+    public double getPositionPercentile() {
+        return (getPosition() - ElevatorConstants.kHeightOffset) / (ElevatorConstants.kMaxHeight - ElevatorConstants.kHeightOffset);
     }
 
     /**
