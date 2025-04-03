@@ -200,22 +200,6 @@ public class RobotContainer {
             e.printStackTrace();
         }
 
-        /*try {
-            Thread.sleep(2000); // Wait 2 sec
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            // handle the exception...        
-            // For example consider calling Thread.currentThread().interrupt(); here.
-        }*/
-        //exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-            //new Pose2d(1, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-                  //List.of(new Translation2d(1, 1), new Translation2d(1, 1)),
-        // End 3 meters straight ahead of where we started, facing forward
-            //new Pose2d(1, 1, new Rotation2d(0)),
-            //config);
-
     var thetaController = new ProfiledPIDController(
         AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
@@ -225,8 +209,6 @@ public class RobotContainer {
         m_robotDrive::getPose, // Functional interface to feed supplier
         DriveConstants.kDriveKinematics,
         
-        
-
         // Position controllers
         new PIDController(AutoConstants.kPXController, 0, 0),
         new PIDController(AutoConstants.kPYController, 0, 0),
@@ -239,7 +221,6 @@ public class RobotContainer {
 
     // Run path following command, then stop at the end.
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
-
     return new SequentialCommandGroup(
         m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight),
         swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0))
