@@ -92,6 +92,7 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+    zeroHeading();
   }
 
   @Override
@@ -150,11 +151,7 @@ public class DriveSubsystem extends SubsystemBase {
    * @param rot           Angular rate of the robot.
    * @param fieldRelative Whether the provided x and y speeds are relative to the
    *                      field.
-   */
-  public void getRelative() {
-    
-  }
-  
+   */  
   public void drive(double xSpeed, double ySpeed, double rot, double elevatorHeightPercentage) {
     // Convert the commanded speeds into the correct units for the drivetrain
     double xSpeedDelivered = calculateDelivered(
@@ -278,12 +275,12 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Returns the heading of the robot.
+   * Returns the heading of the robot, which will be between 0 and 360 degrees.
    *
-   * @return the robot's heading in degrees, from -180 to 180
+   * @return the robot's heading.
    */
   public Rotation2d getHeading() {
-    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
   }
 
   /**
