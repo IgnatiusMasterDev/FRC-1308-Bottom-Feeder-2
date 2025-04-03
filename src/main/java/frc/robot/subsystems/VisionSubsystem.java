@@ -1,10 +1,6 @@
 package frc.robot.subsystems;
 
-import java.util.ArrayList;
-
 import org.opencv.core.Mat;
-import org.photonvision.PhotonCamera;
-import org.photonvision.targeting.PhotonPipelineResult;
 
 import edu.wpi.first.apriltag.AprilTagDetection;
 import edu.wpi.first.apriltag.AprilTagDetector;
@@ -12,7 +8,6 @@ import edu.wpi.first.apriltag.AprilTagPoseEstimator;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.CvSink;
 import edu.wpi.first.cscore.UsbCamera;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -35,7 +30,7 @@ public class VisionSubsystem extends SubsystemBase {
     public VisionSubsystem() {
         // initialize webcam
         arducam.setResolution(640, 480);
-        arducam.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen); 
+        arducam.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen);
 
         detector.addFamily("tag36h11");
     }
