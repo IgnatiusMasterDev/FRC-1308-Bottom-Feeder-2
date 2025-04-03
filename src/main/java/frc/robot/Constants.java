@@ -112,7 +112,7 @@ public final class Constants {
 
     public static final double kElevatorSpeed = .7;
     public static final double kAttenuationBand = 0.1;
-    public static final double kAttenuationMultiplier = 0.9;
+    public static final double kAttenuationMultiplier = 1.2;
     public static final double kElevatorHomingSpeed = .2;
     // 2X encoder, so 1 revolution = 4096 pulses
     // 24 tooth sprocket, 48.86mm chain to chain diameter

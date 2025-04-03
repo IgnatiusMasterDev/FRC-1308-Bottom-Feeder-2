@@ -28,6 +28,7 @@ import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -190,7 +191,7 @@ public class RobotContainer {
         // Pass through these two interior waypoints, making an 's' curve path
         List.of(new Translation2d(1, 0), new Translation2d(2, 0)),
         // End 3 meters straight ahead of where we started, facing forward
-        new Pose2d(2.65, 0, new Rotation2d(0)),
+        new Pose2d(2.55, 0, new Rotation2d(0)),
         //2.7 is roughly 16 ft
         config);
 
@@ -222,8 +223,9 @@ public class RobotContainer {
     // Run path following command, then stop at the end.
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
     return new SequentialCommandGroup(
-        m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight),
-        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0))
+        m_elevator.getSetElevatorHeightCommand(.45),
+        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)),
+        new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms)
         );
     
   }
