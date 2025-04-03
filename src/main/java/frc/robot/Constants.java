@@ -25,8 +25,13 @@ public final class Constants {
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
-    public static final double kMaxSpeedMetersPerSecond = 4.8;
-    public static final double kMaxAngularSpeed = 2 * Math.PI; // radians per second
+    public static final double kMaxSpeedMetersPerSecond = 7;
+    public static final double kMaxAngularSpeed = 2 * Math.PI*1.5; // radians per second
+    
+    public static final double kPrecisionMaxSpeedReduction = 0.3;
+    public static final double kPrecisionMaxRotationReduction = 0.4;
+    public static final double kElevatorMaxSpeedReduction = 0.5;
+    public static final double kElevatorMaxRotationReduction = 0.5;
 
     // Chassis configuration
     public static final double kTrackWidth = Units.inchesToMeters(23);
@@ -93,9 +98,27 @@ public final class Constants {
     public static final int kTopLimitSwitchChannelId = 9;
     public static final int kBottomLimitSwitchChannelId = 8;
     public static final int kElevatorEncoderChannelId = 0;
+    public static final int kElevatorEncoderChannelAId = 2;
+    public static final int kElevatorEncoderChannelBId = 3;
 
-    public static final double kElevatorSpeed = 1;
-    public static final double kRotationThreshold = 3.5;
+    public static final double kElevatorSpeed = .7;
+    public static final double kAttenuationBand = 0.1;
+    public static final double kAttenuationMultiplier = 0.2;
+    public static final double kElevatorHomingSpeed = .2;
+    // 2X encoder, so 1 revolution = 4096 pulses
+    // 24 tooth sprocket, 48.86mm chain to chain diameter
+    // 2 stage elevator
+    public static final double kDistancePerPulse = (2.0 * 0.1535 / 2048.0);
+    public static final double kHeightOffset = 0.23;
+    public static final double kMaxHeight = 1.30;
+
+    public static final double kAlpha = .025;
+    public static final double kTolerance = 0.01;
+
+    public static final double processorHeight = .5;
+    public static final double floaterHeight = .59;
+    public static final double coral1Height = 1;
+    public static final double coral2Height = kMaxHeight;
   }
 
   public static final class GrabberConstants {
@@ -118,8 +141,8 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
-    public static final double kMaxSpeedMetersPerSecond = 3;
-    public static final double kMaxAccelerationMetersPerSecondSquared = 3;
+    public static final double kMaxSpeedMetersPerSecond = .5;
+    public static final double kMaxAccelerationMetersPerSecondSquared = 0.1;
     public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
     public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
 

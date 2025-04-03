@@ -3,12 +3,14 @@ package frc.robot.subsystems;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj2.command.FunctionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ElevatorConstants;
@@ -19,15 +21,20 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final TalonFX m_talon1 = new TalonFX(ElevatorConstants.kTalon1CanId);
     private final TalonFX m_talon2 = new TalonFX(ElevatorConstants.kTalon2CanId);
 
-    private DigitalInput topLimitSwitch = new DigitalInput(ElevatorConstants.kTopLimitSwitchChannelId);
+    // private DigitalInput topLimitSwitch = new DigitalInput(ElevatorConstants.kTopLimitSwitchChannelId);
     private DigitalInput bottomLimitSwitch = new DigitalInput(ElevatorConstants.kBottomLimitSwitchChannelId);
 
     // Encoder and positioning variables
-    private final DutyCycleEncoder encoder = new DutyCycleEncoder(ElevatorConstants.kElevatorEncoderChannelId);
-    private boolean isCalibrated = false;
-    private double encoderOffset;
-    private double previousPosition = encoder.get();
-    private int rotationsSinceStart = 0;
+    // private final DutyCycleEncoder encoder = new DutyCycleEncoder(ElevatorConstants.kElevatorEncoderChannelId);
+    private final Encoder m_Encoder = new Encoder(ElevatorConstants.kElevatorEncoderChannelAId,
+                                                ElevatorConstants.kElevatorEncoderChannelBId,
+                                                false,
+                                                Encoder.EncodingType.k1X);
+    private boolean m_isCalibrated = false;
+    private double m_lastSetSpeed = 0.0;
+
+    private final PIDController m_HeightController = new PIDController(1.0,0,0);
+
 
     // Network tables publishing
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -39,9 +46,12 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
         .publish();
-    private final BooleanPublisher topLimitSwitchPublisher = table
-        .getBooleanTopic("top limit switch")
+    private final DoublePublisher lastSetSpeedPublisher = table
+        .getDoubleTopic("lastSetSpeed")
         .publish();
+    // private final BooleanPublisher topLimitSwitchPublisher = table
+    //     .getBooleanTopic("top limit switch")
+    //     .publish();
     private final BooleanPublisher bottomLimitSwitchPublisher = table
         .getBooleanTopic("bottom limit switch")
         .publish();
@@ -53,7 +63,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     public ElevatorSubsystem() {
         m_talon1.setNeutralMode(NeutralModeValue.Brake);
         m_talon2.setNeutralMode(NeutralModeValue.Brake);
-        encoder.setInverted(true);
+        m_Encoder.setDistancePerPulse(ElevatorConstants.kDistancePerPulse);
     }
 
     @Override
@@ -61,16 +71,16 @@ public class ElevatorSubsystem extends SubsystemBase {
         // Publish values to NetworkTables
         encoderPublisher.set(getPosition());
         velocityPublisher.set(getVelocity());
-        topLimitSwitchPublisher.set(atTop());
+        // topLimitSwitchPublisher.set(atTop());
         bottomLimitSwitchPublisher.set(atBottom());
+        lastSetSpeedPublisher.set(m_lastSetSpeed);
 
         // Calibrate elevator if it needs to be
-        if (!isCalibrated) {
-            new InstantCommand(() -> down(1), this).schedule();
+        if (!m_isCalibrated) {
+            new InstantCommand(() -> down(ElevatorConstants.kElevatorHomingSpeed, true), this).schedule();
             if (atBottom()) {
-                isCalibrated = true;
-                encoderOffset = encoder.get();
-                rotationsSinceStart = 0;
+                m_isCalibrated = true;
+                m_Encoder.reset();
                 stop();
             }
         }
@@ -81,17 +91,14 @@ public class ElevatorSubsystem extends SubsystemBase {
      * 
      * <p>This method MUST be called in the periodic method in order to function properly.
      * 
-     * @return the position of the elevator in rotations.
+     * @return the position of the elevator in rotations. // TODO this returns in meters; change javadoc
      */
     private double getPosition() {
-        double delta = encoder.get() - previousPosition;
-        previousPosition = encoder.get();
-        if (getVelocity() > 0 && delta < 0 && Math.abs(delta) > .1) {
-            rotationsSinceStart++;
-        } else if (getVelocity() < 0 && delta > 0 && Math.abs(delta) > .1) {
-            rotationsSinceStart--;
-        }
-        return rotationsSinceStart + encoder.get() - encoderOffset; // TODO convert from rotations to height
+        return m_Encoder.getDistance() + ElevatorConstants.kHeightOffset;
+    }
+
+    public double getPositionPercentile() {
+        return (getPosition() - ElevatorConstants.kHeightOffset) / (ElevatorConstants.kMaxHeight - ElevatorConstants.kHeightOffset);
     }
 
     /**
@@ -104,15 +111,23 @@ public class ElevatorSubsystem extends SubsystemBase {
         return m_talon1.get();
     }
 
+
     /**
      * Begin raising the elevator. The elevator will not rise or will stop moving if the
      * top limit switch is pressed.
      *  
      * @return true if the elevator is rising.
      */
+    
     public boolean up(double speed) {
+        double ratio = (getPosition() - ElevatorConstants.kHeightOffset) / (ElevatorConstants.kMaxHeight - ElevatorConstants.kHeightOffset);
+        boolean inAttenuationZone = ratio >= (1.0 - ElevatorConstants.kAttenuationBand);
+        double speedMultiplier = inAttenuationZone ? ElevatorConstants.kAttenuationMultiplier : 1.0;
+        double newSpeed = (ElevatorConstants.kAlpha * speedMultiplier * speed) + 
+            ((1.0 - ElevatorConstants.kAlpha) * m_lastSetSpeed);
+        
         if (!atTop()) {
-            setElevatorSpeed(speed);
+            setElevatorSpeed(newSpeed);
             return true;
         } else {
             stop();
@@ -126,9 +141,15 @@ public class ElevatorSubsystem extends SubsystemBase {
      * 
      * @return true if the elevator is lowering.
      */
-    public boolean down(double speed) {
+    public boolean down(double speed, boolean isHoming) {
+        double ratio = (getPosition() - ElevatorConstants.kHeightOffset) / (ElevatorConstants.kMaxHeight - ElevatorConstants.kHeightOffset);
+        boolean inAttenuationZone = ratio <= ElevatorConstants.kAttenuationBand;
+        double speedMultiplier = (!isHoming && inAttenuationZone) ? ElevatorConstants.kAttenuationMultiplier : 1.0;
+        double newSpeed = (ElevatorConstants.kAlpha * speedMultiplier * -speed) + 
+            ((1.0 - ElevatorConstants.kAlpha) * m_lastSetSpeed);
+
         if (!atBottom()) {
-            setElevatorSpeed(-speed);
+            setElevatorSpeed(newSpeed);
             return true;
         } else {
             stop();
@@ -151,6 +172,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private void setElevatorSpeed(double speed) {
         // The motors have opposite orientations on the robot,
         // so one must be inverted to spin in the same direction
+        m_lastSetSpeed = speed;
         m_talon1.set(speed);
         m_talon2.set(-speed);
     }
@@ -161,7 +183,8 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if the elevator is all the way up
      */
     private boolean atTop() {
-        return topLimitSwitch.get() || getPosition() >= ElevatorConstants.kRotationThreshold;
+        // return !topLimitSwitch.get() || getPosition() >= ElevatorConstants.kMaxHeight;
+        return getPosition() >= ElevatorConstants.kMaxHeight;
     }
 
     /**
@@ -171,5 +194,23 @@ public class ElevatorSubsystem extends SubsystemBase {
      */
     private boolean atBottom() {
         return bottomLimitSwitch.get();
+    }
+
+
+    public FunctionalCommand getSetElevatorHeightCommand(double height) {
+        return new FunctionalCommand(
+            () -> {m_HeightController.reset();},
+            () -> {
+                double desiredSpeed = m_HeightController.calculate(getPosition(), height);
+                if (desiredSpeed <= 0.0) {
+                    down(-desiredSpeed, false);
+                } else {
+                    up(desiredSpeed);
+                }
+            },
+            (interrupted) -> stop(),
+            () -> {return Math.abs(getPosition() - height) < ElevatorConstants.kTolerance;},
+            this
+        );
     }
 }
