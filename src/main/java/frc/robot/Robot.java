@@ -7,6 +7,8 @@ package frc.robot;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.cscore.VideoSink;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -23,11 +25,13 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
+  // The cameras only seem to work if we instantiate them in the robot class.
   private RobotContainer m_robotContainer;
-
-  UsbCamera camera1;
-
+  public static UsbCamera webcam, arducam;
   VideoSink server;
+
+  private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
+  private final NetworkTable visionTable = networkTables.getTable("vision");
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -39,11 +43,15 @@ public class Robot extends TimedRobot {
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
 
-    camera1 = CameraServer.startAutomaticCapture(0);
-    camera1.setResolution(160, 120);
-    server = CameraServer.getServer();
-    camera1.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen); 
+    webcam = CameraServer.startAutomaticCapture(0);
+    webcam.setResolution(160, 120);
+    webcam.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen); 
 
+    arducam = CameraServer.startAutomaticCapture(1);
+    arducam.setResolution(320, 240);
+    arducam.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen);
+
+    server = CameraServer.getServer();
   }
 
   /**
