@@ -60,8 +60,7 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Vision and pose estimator
-  public PhotonVision m_cameraVision = new PhotonVision(); // public so that commands can access it.
+  // Pose estimator
   private SwerveDrivePoseEstimator m_poseEstimator;
 
   // NetworkTable variables
@@ -81,6 +80,9 @@ public class DriveSubsystem extends SubsystemBase {
     .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
     .publish();
 
+  private boolean isPrecisionMode = false;
+  private boolean isFieldRelative = false;
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
@@ -93,11 +95,11 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
-    addVisionMeasurement(m_cameraVision.getEstimatedPose()); // supplement pose estimator with PhotonVision pose estimation
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    headingPublisher.set(new Rotation2d[] {getHeading()});
     posePublisher.set(new Pose2d[] {getPose()});
+    headingPublisher.set(getHeading().getDegrees());
+
     swerveStatePublisher.set(getModuleStates());
     desiredSwerveStatePublisher.set(getDesiredModuleStates());
   }
@@ -115,7 +117,6 @@ public class DriveSubsystem extends SubsystemBase {
    * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
    * 
    * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-   * @param timestampSeconds The timestamp of the vision measurement in seconds.
    */
   public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
     // If there are no AprilTags in view, then this code segment will throw an error
@@ -123,6 +124,17 @@ public class DriveSubsystem extends SubsystemBase {
     try {
       m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
     } catch (Exception e) {}
+
+  public void resetOdometry(Pose2d pose) {
+    m_odometry.resetPosition(
+        getHeading(),
+        new SwerveModulePosition[] {
+            m_frontLeft.getPosition(),
+            m_frontRight.getPosition(),
+            m_rearLeft.getPosition(),
+            m_rearRight.getPosition()
+        },
+        pose);
   }
 
   /**
@@ -134,23 +146,53 @@ public class DriveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the provided x and y speeds are relative to the
    *                      field.
    */
-  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative) {
+  public void getRelative() {
+    
+  }
+  
+  public void drive(double xSpeed, double ySpeed, double rot, double elevatorHeightPercentage) {
     // Convert the commanded speeds into the correct units for the drivetrain
-    double xSpeedDelivered = xSpeed * DriveConstants.kMaxSpeedMetersPerSecond;
-    double ySpeedDelivered = ySpeed * DriveConstants.kMaxSpeedMetersPerSecond;
-    double rotDelivered = rot * DriveConstants.kMaxAngularSpeed;
+    double xSpeedDelivered = calculateDelivered(
+      xSpeed, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxSpeedMetersPerSecond,
+      DriveConstants.kPrecisionMaxSpeedReduction,
+      DriveConstants.kElevatorMaxSpeedReduction);
+    double ySpeedDelivered = calculateDelivered(
+      ySpeed, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxSpeedMetersPerSecond,
+      DriveConstants.kPrecisionMaxSpeedReduction,
+      DriveConstants.kElevatorMaxSpeedReduction);
+    double rotDelivered = calculateDelivered(
+      rot, 
+      elevatorHeightPercentage, 
+      DriveConstants.kMaxAngularSpeed,
+      DriveConstants.kPrecisionMaxRotationReduction,
+      DriveConstants.kElevatorMaxRotationReduction);
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-        fieldRelative
+        isFieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                 getHeading())
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
+     
     SwerveDriveKinematics.desaturateWheelSpeeds(
         swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
     m_frontLeft.setDesiredState(swerveModuleStates[0]);
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  private double calculateDelivered(double value, double elevatorHeightPercentage, double maxSpeed, double precisionModeReduction, double elevatorReduction) {
+    return value
+        // Adjust based on max speed
+         * maxSpeed
+        // Reduce speed if in precision mode
+         * (isPrecisionMode ? precisionModeReduction : 1)
+        // Reduce speed based on elevator height if in speed mode
+         * (isPrecisionMode ? 1 : 1 - (elevatorHeightPercentage * elevatorReduction));
   }
 
   /**
@@ -165,6 +207,14 @@ public class DriveSubsystem extends SubsystemBase {
   /** Zeroes the heading of the robot. */
   public void zeroHeading() {
     m_gyro.reset();
+  }
+
+  public void setPrecisionMode(boolean value) {
+    isPrecisionMode = value;
+  }
+  
+  public void setFieldRelative(boolean value) {
+    isFieldRelative = value;
   }
 
   /**
@@ -231,6 +281,20 @@ public class DriveSubsystem extends SubsystemBase {
     m_rearLeft.resetEncoders();
     m_frontRight.resetEncoders();
     m_rearRight.resetEncoders();
+  }
+
+  /** Zeroes the heading of the robot. */
+  public void zeroHeading() {
+    m_gyro.reset();
+  }
+
+  /**
+   * Returns the heading of the robot.
+   *
+   * @return the robot's heading in degrees, from -180 to 180
+   */
+  public Rotation2d getHeading() {
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
   }
 
   /**
