@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -237,8 +238,12 @@ public class RobotContainer {
     //m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose()); // TODO figure out how to implement pose estimation instead of odometry
 
     // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
+    //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
 
+    return new SequentialCommandGroup(
+        m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight),
+        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0))
+        );
     
   }
 }
