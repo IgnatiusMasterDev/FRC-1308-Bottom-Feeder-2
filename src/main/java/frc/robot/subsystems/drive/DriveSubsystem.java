@@ -7,10 +7,6 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
-import java.util.Optional;
-
-import org.photonvision.EstimatedRobotPose;
-
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.hal.HAL;
@@ -123,14 +119,11 @@ public class DriveSubsystem extends SubsystemBase {
    * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
    * 
    * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-   * @param timestampSeconds The timestamp of the vision measurement in seconds.
+   * @param timestampSeconds The timestamp of the vision measurement in seconds since startup. This can be retrieved wit
+   * {@code Timer.getFPGATimestamp()}.
    */
-  public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
-    // If there are no AprilTags in view, then this code segment will throw an error
-    // because calling estimatedRobotPose.get() will return nothing, basically.
-    try {
-      m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
-    } catch (Exception e) {}
+  public void addVisionMeasurement(Pose2d estimatedRobotPose, double timestampSeconds) {
+    m_poseEstimator.addVisionMeasurement(estimatedRobotPose, timestampSeconds);
   }
 
   /**

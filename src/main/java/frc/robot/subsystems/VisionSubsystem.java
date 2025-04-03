@@ -8,14 +8,18 @@ import edu.wpi.first.apriltag.AprilTagPoseEstimator;
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.CvSink;
 import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform3d;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Robot;
+import frc.robot.RobotContainer;
 
 
 public class VisionSubsystem extends SubsystemBase {
+
+    private final RobotContainer m_container;
 
     private final UsbCamera arducam = Robot.arducam;
     private final CvSink cvSink = CameraServer.getVideo();
@@ -24,11 +28,9 @@ public class VisionSubsystem extends SubsystemBase {
     private final AprilTagPoseEstimator.Config config = new AprilTagPoseEstimator.Config(.206, 361.6942, 359.185383, 320, 240);
     private final AprilTagPoseEstimator poseEstimator = new AprilTagPoseEstimator(config);
 
-    private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
-    private final NetworkTable table = networkTables.getTable("vision");
-
-    public VisionSubsystem() {
-        // initialize webcam
+    public VisionSubsystem(RobotContainer container) {
+        m_container = container;
+        // initialize arducam
         arducam.setResolution(640, 480);
         arducam.setConnectionStrategy(UsbCamera.ConnectionStrategy.kKeepOpen);
 
@@ -41,9 +43,10 @@ public class VisionSubsystem extends SubsystemBase {
         if (cvSink.grabFrame(frame) > 0) {
             AprilTagDetection[] detections = detector.detect(frame);
             for (AprilTagDetection detection : detections) {
-                System.out.println("Detection tag ID: " + detection.getId());
-
-                Transform3d estimatedPose = poseEstimator.estimate(detection);
+                System.out.println("Detected tag ID: " + detection.getId());
+                Transform3d transform = poseEstimator.estimate(detection);
+                Pose2d pose = new Pose2d(transform.getX(), transform.getY(), new Rotation2d(transform.getRotation().getZ()));
+                m_container.m_robotDrive.addVisionMeasurement(pose, Timer.getFPGATimestamp());
             }
         }
     }
