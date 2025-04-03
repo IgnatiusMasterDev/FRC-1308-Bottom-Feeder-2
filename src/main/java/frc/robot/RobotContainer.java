@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import java.util.List;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -13,25 +15,25 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PS4Controller.Button;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
+import frc.robot.commands.AutoAimCommand;
 import frc.robot.commands.ToggleArmsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 import frc.robot.subsystems.grabber.WheelsSubsystem;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-
-import java.util.List;
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -41,15 +43,16 @@ import java.util.List;
  */
 public class RobotContainer {
   // The robot's subsystems
-  private final DriveSubsystem m_robotDrive = new DriveSubsystem();
-  private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
-  private final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
-  private final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
+  /* The subsystems and controllers sometimes need to be accessed by
+   * commands, so they are made public so that they can be accessed. */
+  public final DriveSubsystem m_robotDrive = new DriveSubsystem();
+  public final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
+  public final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
+  public final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
   XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
-  
 
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
@@ -152,17 +155,17 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
             () -> m_grabberArms.lower(), m_grabberArms));
     // Press B to toggle arms up or down; 
-    ToggleArmsCommand toggleArms = new ToggleArmsCommand(false, m_grabberArms);
+    ToggleArmsCommand toggleArms = new ToggleArmsCommand(m_grabberArms);
     new Trigger(() -> m_operatorController.getBButton())
         .onTrue(toggleArms);
     
 
-    // Press A to spin grabber wheels inward
+    // Hold A to spin grabber wheels inward
     new Trigger(() -> m_operatorController.getAButton())
     .whileTrue(new RunCommand(
         () -> m_grabberWheels.in(), m_grabberWheels));
 
-    // Press X to spin grabber wheels outward
+    // Hold X to spin grabber wheels outward
     new Trigger(() -> m_operatorController.getXButton())
     .whileTrue(new RunCommand(
         () -> m_grabberWheels.out(), m_grabberWheels));
@@ -233,7 +236,7 @@ public class RobotContainer {
         m_robotDrive);
 
     // Reset odometry to the starting pose of the trajectory.
-    m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
+    //m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose()); // TODO figure out how to implement pose estimation instead of odometry
 
     // Run path following command, then stop at the end.
     return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));

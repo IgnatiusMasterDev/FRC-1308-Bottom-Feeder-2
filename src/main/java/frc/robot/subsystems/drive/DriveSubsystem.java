@@ -7,20 +7,24 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
+import java.util.Optional;
+
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.hal.HAL;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -57,23 +61,15 @@ public class DriveSubsystem extends SubsystemBase {
   // The gyro sensor
   private final Pigeon2 m_gyro = new Pigeon2(DriveConstants.kPigeonCanId);
 
-  // Odometry class for tracking robot pose
-  SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
-      DriveConstants.kDriveKinematics,
-      getHeading(),
-      new SwerveModulePosition[] {
-          m_frontLeft.getPosition(),
-          m_frontRight.getPosition(),
-          m_rearLeft.getPosition(),
-          m_rearRight.getPosition()
-      });
+  // Pose estimator
+  private SwerveDrivePoseEstimator m_poseEstimator;
 
   // NetworkTable variables
   private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
   private final NetworkTable table = networkTables.getTable("drive");
 
-  private final DoublePublisher headingPublisher = table
-    .getDoubleTopic("heading")
+  private final StructArrayPublisher<Rotation2d> headingPublisher = table
+    .getStructArrayTopic("heading", Rotation2d.struct)
     .publish();
   private final StructArrayPublisher<Pose2d> posePublisher = table
     .getStructArrayTopic("pose", Pose2d.struct)
@@ -93,26 +89,23 @@ public class DriveSubsystem extends SubsystemBase {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
     zeroHeading();
+
+    // Initialize pose estimate
+    m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), AutoConstants.kStartPose); // TODO later, change to a dynamic vision call
   }
 
   @Override
   public void periodic() {
-    // Update the odometry in the periodic block
-    m_odometry.update(
-        getHeading(),
-        new SwerveModulePosition[] {
-            m_frontLeft.getPosition(),
-            m_frontRight.getPosition(),
-            m_rearLeft.getPosition(),
-            m_rearRight.getPosition()
-        });
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    headingPublisher.set(getHeading().getDegrees());
-    
     Pose2d[] pose = {getPose()};
     posePublisher.set(pose);
 
+    m_poseEstimator.update(getHeading(), getModulePositions());
+    
+    // Publish DriveSubsystem telemetry to NetworkTables
+    headingPublisher.set(new Rotation2d[] {getHeading()});
+    posePublisher.set(new Pose2d[] {getPose()});
     swerveStatePublisher.set(getModuleStates());
     desiredSwerveStatePublisher.set(getDesiredModuleStates());
   }
@@ -123,24 +116,21 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The pose.
    */
   public Pose2d getPose() {
-    return m_odometry.getPoseMeters();
+    return m_poseEstimator.getEstimatedPosition();
   }
 
   /**
-   * Resets the odometry to the specified pose.
-   *
-   * @param pose The pose to which to set the odometry.
+   * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
+   * 
+   * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
+   * @param timestampSeconds The timestamp of the vision measurement in seconds.
    */
-  public void resetOdometry(Pose2d pose) {
-    m_odometry.resetPosition(
-        getHeading(),
-        new SwerveModulePosition[] {
-            m_frontLeft.getPosition(),
-            m_frontRight.getPosition(),
-            m_rearLeft.getPosition(),
-            m_rearRight.getPosition()
-        },
-        pose);
+  public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
+    // If there are no AprilTags in view, then this code segment will throw an error
+    // because calling estimatedRobotPose.get() will return nothing, basically.
+    try {
+      m_poseEstimator.addVisionMeasurement(estimatedRobotPose.get().estimatedPose.toPose2d(), estimatedRobotPose.get().timestampSeconds);
+    } catch (Exception e) {}
   }
 
   /**
@@ -198,13 +188,17 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Sets the wheels into an X formation to prevent movement.
+   * Returns the heading of the robot.
+   *
+   * @return the robot's heading.
    */
-  public void setX() {
-    m_frontLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
-    m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
-    m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
-    m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
+  public Rotation2d getHeading() {
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
+  }
+
+  /** Zeroes the heading of the robot. */
+  public void zeroHeading() {
+    m_gyro.reset();
   }
 
   public void setPrecisionMode(boolean value) {
@@ -235,14 +229,12 @@ public class DriveSubsystem extends SubsystemBase {
    * @return The current swerve module states.
    */
   public SwerveModuleState[] getModuleStates() {
-    SwerveModuleState[] states = {
+    return new SwerveModuleState[] {
       m_frontLeft.getState(),
       m_frontRight.getState(),
       m_rearLeft.getState(),
       m_rearRight.getState()
     };
-
-    return states;
   }
 
   /**
@@ -261,26 +253,26 @@ public class DriveSubsystem extends SubsystemBase {
     return desiredStates;
   }
 
+  /**
+   * Returns the current swerve module positions.
+   * 
+   * @return The current swerve module positions. 
+   */
+  public SwerveModulePosition[] getModulePositions() {
+    return new SwerveModulePosition[] {
+      m_frontLeft.getPosition(),
+      m_frontRight.getPosition(),
+      m_rearLeft.getPosition(),
+      m_rearRight.getPosition()
+    };
+  }
+
   /** Resets the drive encoders to currently read a position of 0. */
   public void resetEncoders() {
     m_frontLeft.resetEncoders();
     m_rearLeft.resetEncoders();
     m_frontRight.resetEncoders();
     m_rearRight.resetEncoders();
-  }
-
-  /** Zeroes the heading of the robot. */
-  public void zeroHeading() {
-    m_gyro.reset();
-  }
-
-  /**
-   * Returns the heading of the robot, which will be between 0 and 360 degrees.
-   *
-   * @return the robot's heading.
-   */
-  public Rotation2d getHeading() {
-    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
   }
 
   /**
@@ -290,5 +282,15 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public double getTurnRate() {
     return m_gyro.getAngularVelocityZWorld().getValueAsDouble() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
+  }
+  
+  /*
+  * Sets the wheels into an X formation to prevent movement.
+  */
+  public void setX() {
+    m_frontLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
+    m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
+    m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(-45)));
+    m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(45)));
   }
 }

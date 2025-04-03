@@ -33,7 +33,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private boolean m_isCalibrated = false;
     private double m_lastSetSpeed = 0.0;
 
-    private final PIDController m_HeightController = new PIDController(1.0,0,0);
+    private final PIDController m_HeightController = new PIDController(2.0,0,0);
 
 
     // Network tables publishing
@@ -151,6 +151,11 @@ public class ElevatorSubsystem extends SubsystemBase {
         if (!atBottom()) {
             setElevatorSpeed(newSpeed);
             return true;
+        } else if (getPosition() < .5) {
+            // TODO people are complaining that the robot slams down too hard from lag;
+            // this is a temporary fix
+            setElevatorSpeed(-speed / 1.5);
+            return true; 
         } else {
             stop();
             return false;

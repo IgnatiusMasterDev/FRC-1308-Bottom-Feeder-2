@@ -21,6 +21,17 @@ public class ToggleArmsCommand extends Command {
      * @param arms the ArmsSubsystem to use.
      */
     public ToggleArmsCommand(boolean defaultUp, ArmsSubsystem arms) {
+        this.defaultUp = defaultUp;
+        this.arms = arms;
+        addRequirements(arms);
+    }
+
+    /**
+     * Creates a new ToggleArmsCommand.
+     * 
+     * @param arms the ArmsSubsystem to use.
+     */
+    public ToggleArmsCommand(ArmsSubsystem arms) {
         this.defaultUp = true;
         this.arms = arms;
         addRequirements(arms);

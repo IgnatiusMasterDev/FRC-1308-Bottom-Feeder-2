@@ -4,6 +4,10 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
@@ -91,6 +95,11 @@ public final class Constants {
         / kDrivingMotorReduction;
   }
 
+  public static class VisionConstants {
+    public static final String kPhotonCameraName = "camera0";
+    public static final Transform3d kRobotToCamTransform = new Transform3d(1, 0, .915, Rotation3d.kZero);
+  }
+
   public static final class ElevatorConstants {
     public static final int kTalon1CanId = 19;
     public static final int kTalon2CanId = 20;
@@ -141,6 +150,7 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
+    public static final Pose2d kStartPose = new Pose2d(0, 0, Rotation2d.kZero);
     public static final double kMaxSpeedMetersPerSecond = .5;
     public static final double kMaxAccelerationMetersPerSecondSquared = 0.1;
     public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
