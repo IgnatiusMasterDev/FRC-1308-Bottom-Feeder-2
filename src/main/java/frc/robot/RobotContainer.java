@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -128,22 +127,22 @@ public class RobotContainer {
 
     //Press D pad up to set to floater 
     new Trigger(() -> m_operatorController.getPOV() == 0)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight));
+        .onTrue(m_elevator.setToHeight(ElevatorConstants.floaterHeight));
 
     //Press D Pad down to set to processor
     new Trigger(() -> m_operatorController.getPOV() == 180)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.processorHeight));
+        .onTrue(m_elevator.setToHeight(ElevatorConstants.processorHeight));
         
     // Press D pad left to set to Coral 1 
     new Trigger(() -> m_operatorController.getPOV() == 270)
-    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral1Height));
+    .onTrue(m_elevator.setToHeight(ElevatorConstants.coral1Height));
 
     // Press D pad right to set to Coral 2
     new Trigger(() -> m_operatorController.getPOV() == 90)
-    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral2Height));
+    .onTrue(m_elevator.setToHeight(ElevatorConstants.coral2Height));
         
     // new Trigger(() -> m_driverController.getAButton())
-    //     .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
+    //     .onTrue(m_elevator.setToHeight(1.0));
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms
@@ -195,12 +194,6 @@ public class RobotContainer {
         //2.7 is roughly 16 ft
         config);
 
-        try {
-            Thread.sleep(1500); //Wait 1.5 sec
-        } catch (InterruptedException e){
-            e.printStackTrace();
-        }
-
     var thetaController = new ProfiledPIDController(
         AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
     thetaController.enableContinuousInput(-Math.PI, Math.PI);
@@ -211,8 +204,8 @@ public class RobotContainer {
         DriveConstants.kDriveKinematics,
         
         // Position controllers
-        new PIDController(AutoConstants.kPXController, 0, 0),
-        new PIDController(AutoConstants.kPYController, 0, 0),
+        new PIDController(AutoConstants.kPXController * 1.3, 0, 0),
+        new PIDController(AutoConstants.kPYController * 1.3, 0, 0),
         thetaController,
         m_robotDrive::setModuleStates,
         m_robotDrive);
@@ -222,11 +215,9 @@ public class RobotContainer {
 
     // Run path following command, then stop at the end.
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
-    return new SequentialCommandGroup(
-        m_elevator.getSetElevatorHeightCommand(.45),
-        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)),
-        new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms)
-        );
+    return m_elevator.setToHeight(.45)
+        .alongWith(swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)))
+        .andThen(new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
     
   }
 }

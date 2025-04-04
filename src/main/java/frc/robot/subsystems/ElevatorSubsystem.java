@@ -197,7 +197,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
 
 
-    public FunctionalCommand getSetElevatorHeightCommand(double height) {
+    public FunctionalCommand setToHeight(double height) {
         return new FunctionalCommand(
             () -> {m_HeightController.reset();},
             () -> {
