@@ -1,5 +1,6 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
@@ -12,6 +13,7 @@ public class MoveArmsCommand extends Command{
     private final int direction;
     private final Rotation2d m_targetAngle;
     private final ArmsSubsystem m_armsSubsystem;
+    private final PIDController pidController = new PIDController(.001, 0, 0);
 
     /**
      * Creates a new MoveArmsCommand that moves the arms to the specified angle.
@@ -47,9 +49,11 @@ public class MoveArmsCommand extends Command{
     @Override
     public void execute() {
         if (direction == 1) {
-            m_armsSubsystem.raise();
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(speed);
         } else {
-            m_armsSubsystem.lower();
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(-speed);
         }
     }
 

@@ -89,7 +89,7 @@ public class ArmsSubsystem extends SubsystemBase {
      */
     public void raise() {
         if (!fullyRaised()) {
-            armTalon.set(GrabberConstants.kArmSpeed);
+            setSpeed(GrabberConstants.kArmSpeed);
         } else {
             stop();
         }
@@ -101,10 +101,20 @@ public class ArmsSubsystem extends SubsystemBase {
      */
     public void lower() {
         if (!fullyLowered()) {
-            armTalon.set(-GrabberConstants.kArmSpeed);
+            setSpeed(-GrabberConstants.kArmSpeed);
         } else {
             stop();
         }
+    }
+
+    /**
+     * Sets the speed of the arm talon. Should be a number between -1 and 1. Positive is
+     * up and negative is down.
+     * 
+     * @param speed the speed to which to set the arm talon between -1 and 1.
+     */
+    public void setSpeed(double speed) {
+        armTalon.set(speed);
     }
 
     /**
