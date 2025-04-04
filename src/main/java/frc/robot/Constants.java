@@ -136,7 +136,7 @@ public final class Constants {
     public static final int kRightCanId = 18;
     public static final int kGrabberArmsEncoderChannelId = 1;
 
-    public static final double kArmSpeed = .4;
+    public static final double kArmSpeed = .2;
     public static final double kWheelSpeed = .6;
 
     public static final double lowerThreshold = .875;
