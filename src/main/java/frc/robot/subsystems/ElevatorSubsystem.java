@@ -33,7 +33,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private boolean m_isCalibrated = false;
     private double m_lastSetSpeed = 0.0;
 
-    private final PIDController m_HeightController = new PIDController(1.0,0,0);
+    private final PIDController m_HeightController = new PIDController(2.0,0,0);
 
 
     // Network tables publishing
