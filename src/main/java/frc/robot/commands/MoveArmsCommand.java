@@ -5,10 +5,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 
 /**
- * A command to move the arms to a specific place.
+ * This command moves the robot's arms to a specified angle.
  */
 public class MoveArmsCommand extends Command{
     
+    private final int direction;
     private final Rotation2d m_targetAngle;
     private final ArmsSubsystem m_armsSubsystem;
 
@@ -31,15 +32,22 @@ public class MoveArmsCommand extends Command{
             m_targetAngle = targetAngle;
         }
 
+        // Determine directon of movement
+        // if target angle value is higher (meaning the arms are actually lower) than the actual angle
+        if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
+            direction = 1; // raise arms
+        // else lower
+        } else {
+            direction = -1;
+        }
+
         addRequirements(armsSubsystem);
     }
 
     @Override
     public void execute() {
-        // if target angle value is higher (meaning the arms are actually lower) than the actual angle
-        if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
+        if (direction == 1) {
             m_armsSubsystem.raise();
-        // else lower
         } else {
             m_armsSubsystem.lower();
         }
@@ -47,6 +55,13 @@ public class MoveArmsCommand extends Command{
 
     @Override
     public boolean isFinished() {
-        return Math.abs(m_armsSubsystem.getAngle().getDegrees() - m_targetAngle.getDegrees()) < .01;
+        // if we are raising
+        if (direction == 1) {
+        // check if the arms angle is equal to or less than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() <= m_targetAngle.getDegrees();
+        } else {
+        // else check if the arms angle is equal to or greater than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() >= m_targetAngle.getDegrees();
+        }
     }
 }
