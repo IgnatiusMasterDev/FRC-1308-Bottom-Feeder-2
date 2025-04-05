@@ -50,10 +50,13 @@ public class MoveArmsCommand extends Command{
     public void execute() {
         // if target angle value is higher (meaning the arms are actually lower) than the actual angle
         if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
-            m_armsSubsystem.raise();
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(speed);
         // else lower
         } else {
             m_armsSubsystem.lower();
+            double speed = pidController.calculate(-m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(-speed);
         }
     }
 
