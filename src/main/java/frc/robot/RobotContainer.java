@@ -6,6 +6,9 @@ package frc.robot;
 
 import java.util.List;
 
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -59,6 +62,10 @@ public class RobotContainer {
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+
+    // Register named commands for PathPlanner
+    NamedCommands.registerCommand("Raise elevator to .45m", m_elevator.getSetElevatorHeightCommand(.45));
+    NamedCommands.registerCommand("Drop arms to 45 degrees", new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
 
     // Configure default commands
     m_robotDrive.setDefaultCommand(
@@ -175,48 +182,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Create config for trajectory
-    TrajectoryConfig config = new TrajectoryConfig(
-        AutoConstants.kMaxSpeedMetersPerSecond,
-        AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-        // Add kinematics to ensure max speed is actually obeyed
-        .setKinematics(DriveConstants.kDriveKinematics);
-
-    // An example trajectory to follow. All units in meters.
-    Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-        new Pose2d(0, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-        List.of(new Translation2d(1, 0), new Translation2d(2, 0)),
-        // End 3 meters straight ahead of where we started, facing forward
-        new Pose2d(2.5, 0, new Rotation2d(0)),
-        //2.7 is roughly 16 ft
-        config);
-
-    var thetaController = new ProfiledPIDController(
-        AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-    SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-        exampleTrajectory,
-        m_robotDrive::getPose, // Functional interface to feed supplier
-        DriveConstants.kDriveKinematics,
-        
-        // Position controllers
-        new PIDController(AutoConstants.kPXController * 1.3, 0, 0),
-        new PIDController(AutoConstants.kPYController * 1.3, 0, 0),
-        thetaController,
-        m_robotDrive::setModuleStates,
-        m_robotDrive);
-
-    // Reset odometry to the starting pose of the trajectory.
-    //m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose()); // TODO figure out how to implement pose estimation instead of odometry
-
-    // Run path following command, then stop at the end.
-    //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
-    return m_elevator.setToHeight(.45)
-        .alongWith(swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)))
-        .andThen(new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
-    
+    return new PathPlannerAuto("Coral Dropoff"); 
   }
 }
