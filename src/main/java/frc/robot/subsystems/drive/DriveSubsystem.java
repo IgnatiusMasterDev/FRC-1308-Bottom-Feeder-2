@@ -97,7 +97,6 @@ public class DriveSubsystem extends SubsystemBase {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
     zeroHeading();
-    resetPose(DriveConstants.kStartingPose);
 
     // Initialize pose estimate
     m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), DriveConstants.kStartingPose); // TODO later, change to a dynamic vision call
