@@ -17,6 +17,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
@@ -77,6 +78,10 @@ public class DriveSubsystem extends SubsystemBase {
     .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
     .publish();
 
+  // Used to retrieve height percent from elevator subsystem for speed calculations
+  private final NetworkTable elevatorTable = networkTables.getTable("elevator");
+  private final DoubleSubscriber elevatorHeightPercentSubscription = elevatorTable.getDoubleTopic("height(percent)").subscribe(0.0);
+
   private boolean isPrecisionMode = false;
   private boolean isFieldRelative = false;
 
@@ -85,6 +90,7 @@ public class DriveSubsystem extends SubsystemBase {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
     zeroHeading();
+    resetPose(DriveConstants.kStartingPose);
 
     // Initialize pose estimate
     m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), AutoConstants.kStartPose); // TODO later, change to a dynamic vision call
@@ -116,6 +122,15 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
+   * Resets the robot's pose to the given pose.
+   * 
+   * @param pose The pose to reset to.
+   */
+  public void resetPose(Pose2d pose) {
+    m_poseEstimator.resetPose(pose);
+  }
+
+  /**
    * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
    * 
    * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
@@ -135,23 +150,20 @@ public class DriveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the provided x and y speeds are relative to the
    *                      field.
    */  
-  public void drive(double xSpeed, double ySpeed, double rot, double elevatorHeightPercentage) {
+  public void drive(double xSpeed, double ySpeed, double rot) {
     // Convert the commanded speeds into the correct units for the drivetrain
     double xSpeedDelivered = calculateDelivered(
       xSpeed, 
-      elevatorHeightPercentage, 
       DriveConstants.kMaxSpeedMetersPerSecond,
       DriveConstants.kPrecisionMaxSpeedReduction,
       DriveConstants.kElevatorMaxSpeedReduction);
     double ySpeedDelivered = calculateDelivered(
       ySpeed, 
-      elevatorHeightPercentage, 
       DriveConstants.kMaxSpeedMetersPerSecond,
       DriveConstants.kPrecisionMaxSpeedReduction,
       DriveConstants.kElevatorMaxSpeedReduction);
     double rotDelivered = calculateDelivered(
-      rot, 
-      elevatorHeightPercentage, 
+      rot,  
       DriveConstants.kMaxAngularSpeed,
       DriveConstants.kPrecisionMaxRotationReduction,
       DriveConstants.kElevatorMaxRotationReduction);
@@ -170,14 +182,25 @@ public class DriveSubsystem extends SubsystemBase {
     m_rearRight.setDesiredState(swerveModuleStates[3]);
   }
 
-  private double calculateDelivered(double value, double elevatorHeightPercentage, double maxSpeed, double precisionModeReduction, double elevatorReduction) {
+  /**
+   * Calculates an adjusted speed to use for the robot based off of whether the elevator is in precision mode or not
+   * and the elevator height percentage.
+   * 
+   * @param value original speed value from controller input
+   * @param maxSpeed the robot's max speed for this movement. This will differ between translational and rotational movement
+   * @param precisionModeReduction the reduction factor to apply when in precision mode. This should be a value between 0 and 1 (e.g. 0.3 for 30% speed)
+   * @param elevatorReduction the reduction factor to apply based on the elevator height percentage. This should also be a value between 0 and 1 (e.g. 0.5 for 50% speed reduction at max height)
+   * 
+   * @return the adjusted speed value.
+   */
+  private double calculateDelivered(double value, double maxSpeed, double precisionModeReduction, double elevatorReduction) {
     return value
         // Adjust based on max speed
          * maxSpeed
         // Reduce speed if in precision mode
          * (isPrecisionMode ? precisionModeReduction : 1)
         // Reduce speed based on elevator height if in speed mode
-         * (isPrecisionMode ? 1 : 1 - (elevatorHeightPercentage * elevatorReduction));
+         * (isPrecisionMode ? 1 : 1 - (elevatorHeightPercentSubscription.get() * elevatorReduction));
   }
 
   /**
@@ -194,12 +217,34 @@ public class DriveSubsystem extends SubsystemBase {
     m_gyro.reset();
   }
 
+  /**
+   * Sets whether the robot should be in precision mode. In precision mode, the robot moves slower by a
+   * factor of the precision reduction constant and ignores elevator height reduction.
+   * 
+   * @param value true if the robot should be in precision mode.
+   */
   public void setPrecisionMode(boolean value) {
     isPrecisionMode = value;
   }
   
+  /**
+   * Sets whether the robot should move field-relative or robot-relative.
+   * 
+   * @param value true if the robot should move field relative, false if it should move robot-relative.
+   */
   public void setFieldRelative(boolean value) {
     isFieldRelative = value;
+  }
+
+  /**
+   * Returns the current chassis speeds in robot-relative coordinates. This is primarily
+   * used by PathPlanner.
+   * 
+   * @return current robot-relative chassis speeds.
+   */
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return DriveConstants.kDriveKinematics.toChassisSpeeds(
+        getModuleStates());
   }
 
   /**
