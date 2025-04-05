@@ -52,7 +52,7 @@ public class RobotContainer {
     configureButtonBindings();
 
     // Register named commands for PathPlanner
-    NamedCommands.registerCommand("Raise Elevator to .45m", m_elevator.getSetElevatorHeightCommand(.45));
+    NamedCommands.registerCommand("Raise Elevator to .45m", m_elevator.setToHeight(.45));
     NamedCommands.registerCommand("Drop Arms to 45 degrees", new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
 
     // Configure default commands
