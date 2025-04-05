@@ -8,6 +8,11 @@ import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.util.DriveFeedforwards;
 
 import edu.wpi.first.hal.HAL;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -21,7 +26,7 @@ import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
-import frc.robot.Constants.AutoConstants;
+import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -85,6 +90,8 @@ public class DriveSubsystem extends SubsystemBase {
   private boolean isPrecisionMode = false;
   private boolean isFieldRelative = false;
 
+  private RobotConfig pathPlannerConfig;
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
@@ -93,7 +100,34 @@ public class DriveSubsystem extends SubsystemBase {
     resetPose(DriveConstants.kStartingPose);
 
     // Initialize pose estimate
-    m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), AutoConstants.kStartPose); // TODO later, change to a dynamic vision call
+    m_poseEstimator = new SwerveDrivePoseEstimator(DriveConstants.kDriveKinematics, getHeading(), getModulePositions(), DriveConstants.kStartingPose); // TODO later, change to a dynamic vision call
+
+    // Initialize PathPlanner
+    try {
+      pathPlannerConfig = RobotConfig.fromGUISettings();
+    } catch (Exception e) {
+      // TODO we may want more robust exception handling later
+    }
+
+    // Configure AutoBuilder for PathPlanner
+    AutoBuilder.configure(
+      this::getPose, 
+      this::resetPose, 
+      this::getRobotRelativeSpeeds, 
+      this::drive, 
+      new PPHolonomicDriveController(
+        new PIDConstants(5.0, 0.0, 0.0),
+         new PIDConstants(5.0, 0.0, 0.0)), 
+      pathPlannerConfig, 
+      () -> {
+        var alliance = DriverStation.getAlliance();
+        if (alliance.isPresent()) {
+          return alliance.get() == DriverStation.Alliance.Red;
+        }
+        return false;
+      }, 
+      this);
+
   }
 
   @Override
@@ -174,6 +208,24 @@ public class DriveSubsystem extends SubsystemBase {
                 getHeading())
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
      
+    SwerveDriveKinematics.desaturateWheelSpeeds(
+        swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
+    m_frontLeft.setDesiredState(swerveModuleStates[0]);
+    m_frontRight.setDesiredState(swerveModuleStates[1]);
+    m_rearLeft.setDesiredState(swerveModuleStates[2]);
+    m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  /**
+   * Method to drive the robot using ChassisSpeeds and a DriveFeedforwards object. This is used by PathplannerLib.java.
+   * 
+   * @param speeds The desired chassis speeds to drive the robot.
+   * @param dff The DriveFeedforwards object. This is required by the method signature, but we don't actually use it
+   * in this method.
+   */
+  public void drive(ChassisSpeeds speeds, DriveFeedforwards dff) {
+    var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds);
+
     SwerveDriveKinematics.desaturateWheelSpeeds(
         swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
     m_frontLeft.setDesiredState(swerveModuleStates[0]);
