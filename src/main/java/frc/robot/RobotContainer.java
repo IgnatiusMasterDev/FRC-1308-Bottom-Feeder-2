@@ -170,6 +170,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return new PathPlannerAuto("Coral Dropoff"); 
+    return new PathPlannerAuto("Coral dropoff from center"); 
   }
 }
