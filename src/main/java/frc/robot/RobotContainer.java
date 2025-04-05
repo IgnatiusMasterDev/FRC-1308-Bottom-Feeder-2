@@ -69,8 +69,7 @@ public class RobotContainer {
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                m_elevator.getPositionPercentile()),
+                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband)),
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
@@ -224,7 +223,7 @@ public class RobotContainer {
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
     return new SequentialCommandGroup(
         m_elevator.getSetElevatorHeightCommand(.45),
-        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)),
+        swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0)),
         new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms)
         );
     

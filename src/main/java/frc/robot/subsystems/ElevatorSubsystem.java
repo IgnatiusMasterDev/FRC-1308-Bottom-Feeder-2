@@ -41,7 +41,10 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final NetworkTable table = networkTables.getTable("elevator");
 
     private final DoublePublisher encoderPublisher = table
-        .getDoubleTopic("position")
+        .getDoubleTopic("height(m)")
+        .publish();
+    private final DoublePublisher positionPercentilePublisher = table
+        .getDoubleTopic("height(percent)")
         .publish();
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
@@ -70,6 +73,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     public void periodic() {
         // Publish values to NetworkTables
         encoderPublisher.set(getPosition());
+        positionPercentilePublisher.set(getPositionPercentile());
         velocityPublisher.set(getVelocity());
         // topLimitSwitchPublisher.set(atTop());
         bottomLimitSwitchPublisher.set(atBottom());
