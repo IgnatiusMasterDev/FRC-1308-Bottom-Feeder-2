@@ -134,9 +134,7 @@ public class RobotContainer {
     // Press D pad right to set to Coral 2
     new Trigger(() -> m_operatorController.getPOV() == 90)
     .onTrue(m_elevator.setToHeight(ElevatorConstants.coral2Height));
-        
-    // new Trigger(() -> m_driverController.getAButton())
-    //     .onTrue(m_elevator.setToHeight(1.0));
+
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms
