@@ -15,6 +15,7 @@ public class MoveArmsCommand extends Command{
     private final ArmsSubsystem m_armsSubsystem;
     private final PIDController pidController = new PIDController(.001, 0, 0);
 
+
     /**
      * Creates a new MoveArmsCommand that moves the arms to the specified angle.
      * 
@@ -42,7 +43,7 @@ public class MoveArmsCommand extends Command{
         } else {
             direction = -1;
         }
-
+      
         addRequirements(armsSubsystem);
     }
 
