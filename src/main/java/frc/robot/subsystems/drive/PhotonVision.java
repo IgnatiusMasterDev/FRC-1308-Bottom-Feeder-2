@@ -11,7 +11,6 @@ import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.math.geometry.Transform3d;
 import frc.robot.Constants.VisionConstants;
 
 /**
@@ -23,7 +22,6 @@ public class PhotonVision {
     private final PhotonCamera m_camera = new PhotonCamera(VisionConstants.kPhotonCameraName);
     private AprilTagFieldLayout field; // Because of a possible IO Exception, it is not possible for us to make this final, even though it should be.
     private final PhotonPoseEstimator m_poseEstimator = new PhotonPoseEstimator(field, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, VisionConstants.kRobotToCamTransform);
-    private final Transform3d fieldToCamera = VisionConstants.kRobotToCamTransform;
 
     /**
      * Constructs a new PhotonVision object and loads the field layout.
