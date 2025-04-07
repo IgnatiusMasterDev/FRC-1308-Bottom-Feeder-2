@@ -11,7 +11,7 @@ import org.photonvision.targeting.PhotonPipelineResult;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import frc.robot.Constants.VisionConstants;
 
 /**
@@ -22,9 +22,8 @@ import frc.robot.Constants.VisionConstants;
 public class PhotonVision {
     private final PhotonCamera m_camera = new PhotonCamera(VisionConstants.kPhotonCameraName);
     private AprilTagFieldLayout field; // Because of a possible IO Exception, it is not possible for us to make this final, even though it should be.
-    private final PhotonPoseEstimator poseEstimator = new PhotonPoseEstimator(field, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, VisionConstants.kRobotToCamTransform);
-
-    private Pose3d prevEstimatedPose;
+    private final PhotonPoseEstimator m_poseEstimator = new PhotonPoseEstimator(field, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, VisionConstants.kRobotToCamTransform);
+    private final Transform3d fieldToCamera = VisionConstants.kRobotToCamTransform;
 
     /**
      * Constructs a new PhotonVision object and loads the field layout.
@@ -39,22 +38,13 @@ public class PhotonVision {
     }
 
     /**
-     * Returns the robot's pose as estimated from PhotonVision, wrapped in an Optional EstimatedRobotPose.
-     * To access the actual Pose3d, use {@code getEstimatedPose().get().estimatedPose}. If no AprilTags
-     * are in sight, then the Option.get() method throws an error.
+     * Returns the latest estimated pose of the robot based on visible
+     * Apriltags.
      * 
-     * @return the robot's pose wrapped in an Optional EstimatedRobotPose.
+     * @return the estimated robot pose.
      */
     public Optional<EstimatedRobotPose> getEstimatedPose() {
-        if (prevEstimatedPose != null) {
-            poseEstimator.setReferencePose(prevEstimatedPose);
-        }
-
-        Optional<EstimatedRobotPose> estimatedRobotPose = poseEstimator.update(getLatestResult());
-        try {
-            prevEstimatedPose = estimatedRobotPose.get().estimatedPose;
-        } catch (Exception e) {}
-        return estimatedRobotPose;
+        return m_poseEstimator.update(getLatestResult());
     }
 
     /**

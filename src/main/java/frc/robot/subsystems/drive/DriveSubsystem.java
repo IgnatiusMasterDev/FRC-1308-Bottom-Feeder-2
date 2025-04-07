@@ -26,6 +26,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -69,13 +71,14 @@ public class DriveSubsystem extends SubsystemBase {
 
   // Pose estimator
   private SwerveDrivePoseEstimator m_poseEstimator;
+  private PhotonVision m_photonvision = new PhotonVision();
 
   // NetworkTable variables
   private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
   private final NetworkTable table = networkTables.getTable("drive");
 
-  private final StructArrayPublisher<Rotation2d> headingPublisher = table
-    .getStructArrayTopic("heading", Rotation2d.struct)
+  private final DoublePublisher headingPublisher = table
+    .getDoubleTopic("heading")
     .publish();
   private final StructArrayPublisher<Pose2d> posePublisher = table
     .getStructArrayTopic("pose", Pose2d.struct)
@@ -85,6 +88,9 @@ public class DriveSubsystem extends SubsystemBase {
     .publish();
   private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = table
     .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
+    .publish();
+    private final BooleanPublisher visionEstimationsPublisher = table
+    .getBooleanTopic("receiving vision estimations")
     .publish();
 
   // Used to retrieve height percent from elevator subsystem for speed calculations
@@ -100,7 +106,6 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
-
     zeroHeading();
 
     // Initialize pose estimate
@@ -136,14 +141,11 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
+    addVisionMeasurement(m_photonvision.getEstimatedPose());
     
     // Publish DriveSubsystem telemetry to NetworkTables
     posePublisher.set(new Pose2d[] {getPose()});
     headingPublisher.set(getHeading().getDegrees());
-    
-    // Publish DriveSubsystem telemetry to NetworkTables
-    headingPublisher.set(new Rotation2d[] {getHeading()});
-    posePublisher.set(new Pose2d[] {getPose()});
     swerveStatePublisher.set(getModuleStates());
     desiredSwerveStatePublisher.set(getDesiredModuleStates());
   }
@@ -172,8 +174,15 @@ public class DriveSubsystem extends SubsystemBase {
    * @param timestampSeconds The timestamp of the vision measurement in seconds since startup. This can be retrieved wit
    * {@code Timer.getFPGATimestamp()}.
    */
-  public void addVisionMeasurement(Pose2d estimatedRobotPose, double timestampSeconds) {
-    m_poseEstimator.addVisionMeasurement(estimatedRobotPose, timestampSeconds);
+  public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
+    try {
+      Pose2d pose = estimatedRobotPose.get().estimatedPose.toPose2d();
+      double timestampSeconds = estimatedRobotPose.get().timestampSeconds;
+      m_poseEstimator.addVisionMeasurement(pose, timestampSeconds);
+      visionEstimationsPublisher.set(true);
+    } catch (Exception e) {
+      visionEstimationsPublisher.set(false);
+    }
   }
 
   /**
@@ -263,6 +272,16 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public Rotation2d getHeading() {
     return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
+  }
+
+  /**
+   * Sets the heading of the robot to a specified angle.
+   * 
+   * @param heading the angle (between 0 and 360 degrees or 0 and 2pi radians) 
+   * to which to set the robot's heading
+   */
+  public void setHeading(Rotation2d heading) {
+    m_gyro.setYaw(heading.getDegrees());
   }
 
   /** Zeroes the heading of the robot. */
