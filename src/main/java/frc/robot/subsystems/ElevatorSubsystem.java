@@ -33,7 +33,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     private boolean m_isCalibrated = false;
     private double m_lastSetSpeed = 0.0;
 
-    private final PIDController m_HeightController = new PIDController(1.0,0,0);
+    private final PIDController m_HeightController = new PIDController(2.0,0,0);
 
 
     // Network tables publishing
@@ -41,7 +41,10 @@ public class ElevatorSubsystem extends SubsystemBase {
     private final NetworkTable table = networkTables.getTable("elevator");
 
     private final DoublePublisher encoderPublisher = table
-        .getDoubleTopic("position")
+        .getDoubleTopic("height(m)")
+        .publish();
+    private final DoublePublisher positionPercentilePublisher = table
+        .getDoubleTopic("height(percent)")
         .publish();
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
@@ -70,6 +73,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     public void periodic() {
         // Publish values to NetworkTables
         encoderPublisher.set(getPosition());
+        positionPercentilePublisher.set(getPositionPercentile());
         velocityPublisher.set(getVelocity());
         // topLimitSwitchPublisher.set(atTop());
         bottomLimitSwitchPublisher.set(atBottom());
@@ -202,7 +206,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
 
 
-    public FunctionalCommand getSetElevatorHeightCommand(double height) {
+    public FunctionalCommand setToHeight(double height) {
         return new FunctionalCommand(
             () -> {m_HeightController.reset();},
             () -> {

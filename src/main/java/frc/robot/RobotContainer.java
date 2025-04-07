@@ -6,10 +6,10 @@ package frc.robot;
 
 import java.util.List;
 
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
@@ -24,11 +24,19 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+
 import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.commands.AutoAimCommand;
+
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.OIConstants;
+
+import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -53,13 +61,17 @@ public class RobotContainer {
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
   XboxController m_operatorController = new XboxController(OIConstants.kOperatorControllerPort);
-  
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
   public RobotContainer() {
     // Configure the button bindings
     configureButtonBindings();
+
+    // Register named commands for PathPlanner
+    NamedCommands.registerCommand("Raise Elevator to .45m", m_elevator.setToHeight(.45));
+    NamedCommands.registerCommand("Drop Arms to 45 degrees", new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
 
     // Configure default commands
     m_robotDrive.setDefaultCommand(
@@ -69,8 +81,7 @@ public class RobotContainer {
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                m_elevator.getPositionPercentile()),
+                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband)),
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
@@ -128,22 +139,20 @@ public class RobotContainer {
 
     //Press D pad up to set to floater 
     new Trigger(() -> m_operatorController.getPOV() == 0)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.floaterHeight));
+        .onTrue(m_elevator.setToHeight(ElevatorConstants.floaterHeight));
 
     //Press D Pad down to set to processor
     new Trigger(() -> m_operatorController.getPOV() == 180)
-        .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.processorHeight));
+        .onTrue(m_elevator.setToHeight(ElevatorConstants.processorHeight));
         
     // Press D pad left to set to Coral 1 
     new Trigger(() -> m_operatorController.getPOV() == 270)
-    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral1Height));
+    .onTrue(m_elevator.setToHeight(ElevatorConstants.coral1Height));
 
     // Press D pad right to set to Coral 2
     new Trigger(() -> m_operatorController.getPOV() == 90)
-    .onTrue(m_elevator.getSetElevatorHeightCommand(ElevatorConstants.coral2Height));
-        
-    // new Trigger(() -> m_driverController.getAButton())
-    //     .onTrue(m_elevator.getSetElevatorHeightCommand(1.0));
+    .onTrue(m_elevator.setToHeight(ElevatorConstants.coral2Height));
+
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms
@@ -176,70 +185,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Create config for trajectory
-    TrajectoryConfig config = new TrajectoryConfig(
-        AutoConstants.kMaxSpeedMetersPerSecond,
-        AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-        // Add kinematics to ensure max speed is actually obeyed
-        .setKinematics(DriveConstants.kDriveKinematics);
-
-    // An example trajectory to follow. All units in meters.
-    Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-        new Pose2d(0, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-        List.of(new Translation2d(1, 0), new Translation2d(2, 0)),
-        // End 3 meters straight ahead of where we started, facing forward
-        new Pose2d(2.65, 0, new Rotation2d(0)),
-        //2.7 is roughly 16 ft
-        config);
-
-        try {
-            Thread.sleep(1500); //Wait 1.5 sec
-        } catch (InterruptedException e){
-            e.printStackTrace();
-        }
-
-        /*try {
-            Thread.sleep(2000); // Wait 2 sec
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            // handle the exception...        
-            // For example consider calling Thread.currentThread().interrupt(); here.
-        }*/
-        //exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-            //new Pose2d(1, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-                  //List.of(new Translation2d(1, 1), new Translation2d(1, 1)),
-        // End 3 meters straight ahead of where we started, facing forward
-            //new Pose2d(1, 1, new Rotation2d(0)),
-            //config);
-
-    var thetaController = new ProfiledPIDController(
-        AutoConstants.kPThetaController, 0, 0, AutoConstants.kThetaControllerConstraints);
-    thetaController.enableContinuousInput(-Math.PI, Math.PI);
-
-    SwerveControllerCommand swerveControllerCommand = new SwerveControllerCommand(
-        exampleTrajectory,
-        m_robotDrive::getPose, // Functional interface to feed supplier
-        DriveConstants.kDriveKinematics,
-        
-        
-
-        // Position controllers
-        new PIDController(AutoConstants.kPXController, 0, 0),
-        new PIDController(AutoConstants.kPYController, 0, 0),
-        thetaController,
-        m_robotDrive::setModuleStates,
-        m_robotDrive);
-
-    // Reset odometry to the starting pose of the trajectory.
-    //m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose()); // TODO figure out how to implement pose estimation instead of odometry
-
-    // Run path following command, then stop at the end.
-    return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
-
-    
+    return new PathPlannerAuto("Coral dropoff from center"); 
   }
 }

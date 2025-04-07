@@ -27,7 +27,7 @@ import edu.wpi.first.math.util.Units;
  */
 public final class Constants {
   public static final class DriveConstants {
-    public static final Pose2d kStartPose = new Pose2d(0.0, 0.0, Rotation2d.fromRadians(0)); // TODO start pose might change
+    public static final Pose2d kStartingPose = new Pose2d(7.5565, 4.025, Rotation2d.k180deg);
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
     public static final double kMaxSpeedMetersPerSecond = 7;
@@ -113,7 +113,7 @@ public final class Constants {
 
     public static final double kElevatorSpeed = .7;
     public static final double kAttenuationBand = 0.1;
-    public static final double kAttenuationMultiplier = 0.2;
+    public static final double kAttenuationMultiplier = 1.2;
     public static final double kElevatorHomingSpeed = .2;
     // 2X encoder, so 1 revolution = 4096 pulses
     // 24 tooth sprocket, 48.86mm chain to chain diameter
@@ -137,7 +137,7 @@ public final class Constants {
     public static final int kRightCanId = 18;
     public static final int kGrabberArmsEncoderChannelId = 1;
 
-    public static final double kArmSpeed = .4;
+    public static final double kArmSpeed = .25;
     public static final double kWheelSpeed = .6;
 
     public static final double lowerThreshold = .875;

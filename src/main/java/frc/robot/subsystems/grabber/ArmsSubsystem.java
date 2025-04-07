@@ -3,6 +3,7 @@ package frc.robot.subsystems.grabber;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -55,10 +56,21 @@ public class ArmsSubsystem extends SubsystemBase {
     /**
      * Returns the current position of the grabber arms.
      * 
-     * @return The current position of the encoder
+     * @return The current position of the encoder in rotations.
      */
     private double getPosition() {
         return encoder.get();
+    }
+
+    /**
+     * Returns the current angle of the grabber arms in degrees. This is the angle between
+     * the vertical line and te grabber arms; that is, an angle of 0 is fully raised and an
+     * angle of 90 is fully lowered.
+     * 
+     * @return The current position of the encoder in degrees.
+     */
+    public Rotation2d getAngle() {
+        return Rotation2d.fromDegrees(encoder.get() * 125 - 18.75);
     }
 
     /**
@@ -77,7 +89,7 @@ public class ArmsSubsystem extends SubsystemBase {
      */
     public void raise() {
         if (!fullyRaised()) {
-            armTalon.set(GrabberConstants.kArmSpeed);
+            setSpeed(GrabberConstants.kArmSpeed);
         } else {
             stop();
         }
@@ -89,10 +101,20 @@ public class ArmsSubsystem extends SubsystemBase {
      */
     public void lower() {
         if (!fullyLowered()) {
-            armTalon.set(-GrabberConstants.kArmSpeed);
+            setSpeed(-GrabberConstants.kArmSpeed);
         } else {
             stop();
         }
+    }
+
+    /**
+     * Sets the speed of the arm talon. Should be a number between -1 and 1. Positive is
+     * up and negative is down.
+     * 
+     * @param speed the speed to which to set the arm talon between -1 and 1.
+     */
+    public void setSpeed(double speed) {
+        armTalon.set(speed);
     }
 
     /**
