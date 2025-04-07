@@ -1,16 +1,20 @@
 package frc.robot.commands;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 
 /**
- * A command to move the arms to a specific place.
+ * This command moves the robot's arms to a specified angle.
  */
 public class MoveArmsCommand extends Command{
     
+    private final int direction;
     private final Rotation2d m_targetAngle;
     private final ArmsSubsystem m_armsSubsystem;
+    private final PIDController pidController = new PIDController(.001, 0, 0);
+
 
     /**
      * Creates a new MoveArmsCommand that moves the arms to the specified angle.
@@ -31,22 +35,38 @@ public class MoveArmsCommand extends Command{
             m_targetAngle = targetAngle;
         }
 
+        // Determine directon of movement
+        // if target angle value is higher (meaning the arms are actually lower) than the actual angle
+        if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
+            direction = 1; // raise arms
+        // else lower
+        } else {
+            direction = -1;
+        }
+      
         addRequirements(armsSubsystem);
     }
 
     @Override
     public void execute() {
-        // if target angle value is higher (meaning the arms are actually lower) than the actual angle
-        if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
-            m_armsSubsystem.raise();
-        // else lower
+        if (direction == 1) {
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(speed);
         } else {
-            m_armsSubsystem.lower();
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(-speed);
         }
     }
 
     @Override
     public boolean isFinished() {
-        return Math.abs(m_armsSubsystem.getAngle().getDegrees() - m_targetAngle.getDegrees()) < .01;
+        // if we are raising
+        if (direction == 1) {
+        // check if the arms angle is equal to or less than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() <= m_targetAngle.getDegrees();
+        } else {
+        // else check if the arms angle is equal to or greater than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() >= m_targetAngle.getDegrees();
+        }
     }
 }

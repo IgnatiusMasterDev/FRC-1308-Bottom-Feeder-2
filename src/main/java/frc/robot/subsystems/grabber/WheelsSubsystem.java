@@ -17,7 +17,7 @@ public class WheelsSubsystem extends SubsystemBase {
      * Begins spinning the grabber wheels inward.
      */
     public void in() {
-        setWheelSpeed(GrabberConstants.kWheelSpeed);
+        setWheelSpeed(GrabberConstants.kWheelSpeed / 2);
     }
 
     /**
