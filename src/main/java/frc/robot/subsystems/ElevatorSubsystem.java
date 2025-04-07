@@ -155,11 +155,6 @@ public class ElevatorSubsystem extends SubsystemBase {
         if (!atBottom()) {
             setElevatorSpeed(newSpeed);
             return true;
-        } else if (getPosition() < .5) {
-            // TODO people are complaining that the robot slams down too hard from lag;
-            // this is a temporary fix
-            setElevatorSpeed(-speed / 1.5);
-            return true; 
         } else {
             stop();
             return false;
