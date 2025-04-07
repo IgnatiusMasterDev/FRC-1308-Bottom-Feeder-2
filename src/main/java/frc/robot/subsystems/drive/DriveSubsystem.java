@@ -84,10 +84,10 @@ public class DriveSubsystem extends SubsystemBase {
     .getStructArrayTopic("pose", Pose2d.struct)
     .publish();
   private final StructArrayPublisher<SwerveModuleState> swerveStatePublisher = table
-    .getStructArrayTopic("currentSwerveState", SwerveModuleState.struct)
+    .getStructArrayTopic("current swerve state", SwerveModuleState.struct)
     .publish();
   private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = table
-    .getStructArrayTopic("desiredSwerveState", SwerveModuleState.struct)
+    .getStructArrayTopic("desired swerve state", SwerveModuleState.struct)
     .publish();
     private final BooleanPublisher visionEstimationsPublisher = table
     .getBooleanTopic("receiving vision estimations")
