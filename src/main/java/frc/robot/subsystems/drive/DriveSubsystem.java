@@ -7,6 +7,10 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
+import java.util.Optional;
+
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -96,6 +100,7 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+
     zeroHeading();
 
     // Initialize pose estimate
@@ -126,17 +131,15 @@ public class DriveSubsystem extends SubsystemBase {
         return false;
       }, 
       this);
-
   }
 
   @Override
   public void periodic() {
+    m_poseEstimator.update(getHeading(), getModulePositions());
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    Pose2d[] pose = {getPose()};
-    posePublisher.set(pose);
-
-    m_poseEstimator.update(getHeading(), getModulePositions());
+    posePublisher.set(new Pose2d[] {getPose()});
+    headingPublisher.set(getHeading().getDegrees());
     
     // Publish DriveSubsystem telemetry to NetworkTables
     headingPublisher.set(new Rotation2d[] {getHeading()});
@@ -153,9 +156,8 @@ public class DriveSubsystem extends SubsystemBase {
   public Pose2d getPose() {
     return m_poseEstimator.getEstimatedPosition();
   }
-
-  /**
-   * Resets the robot's pose to the given pose.
+   
+  /* Resets the robot's pose to the given pose.
    * 
    * @param pose The pose to reset to.
    */

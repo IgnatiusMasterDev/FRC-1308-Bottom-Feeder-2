@@ -27,7 +27,7 @@ import edu.wpi.first.math.util.Units;
  */
 public final class Constants {
   public static final class DriveConstants {
-    public static final Pose2d kStartingPose = new Pose2d(7.5565, 4.025, Rotation2d.kZero);
+    public static final Pose2d kStartingPose = new Pose2d(7.5565, 4.025, Rotation2d.k180deg);
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
     public static final double kMaxSpeedMetersPerSecond = 7;
