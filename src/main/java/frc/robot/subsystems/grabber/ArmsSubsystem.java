@@ -67,7 +67,7 @@ public class ArmsSubsystem extends SubsystemBase {
      * the vertical line and te grabber arms; that is, an angle of 0 is fully raised and an
      * angle of 90 is fully lowered.
      * 
-     * @return The current position of the encoder in degrees.
+     * @return The current angle of the grabber arms in degrees.
      */
     public Rotation2d getAngle() {
         return Rotation2d.fromDegrees(encoder.get() * 125 - 18.75);
