@@ -15,8 +15,6 @@ import frc.robot.Constants.VisionConstants;
 
 /**
  * Encapsulates the objects and methods associated with the robot's vision.
- * This class is only loosely associated with the drive system, but that's the best
- * I could come up with for where to put this.
  */
 public class PhotonVision {
     private final PhotonCamera m_camera = new PhotonCamera(VisionConstants.kPhotonCameraName);
@@ -71,6 +69,6 @@ public class PhotonVision {
      * @return the latest {@link PhotonPipielineResult}.
      */
     private PhotonPipelineResult getLatestResult() {
-        return m_camera.getLatestResult(); // TODO PhotonCamera.getLatestResult() is deprecated
+        return m_camera.getAllUnreadResults().get(0);
     }
 }

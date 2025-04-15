@@ -227,10 +227,10 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Method to drive the robot using ChassisSpeeds and a DriveFeedforwards object. This is used by PathplannerLib.java.
+   * Method to drive the robot using ChassisSpeeds and a DriveFeedforwards object. This is used by the PathPlanner API.
    * 
    * @param speeds The desired chassis speeds to drive the robot.
-   * @param dff The DriveFeedforwards object. This is required by the method signature, but we don't actually use it
+   * @param dff The DriveFeedforwards object. This is required by the method signature and PathPlanner, but we don't actually use it
    * in this method.
    */
   public void drive(ChassisSpeeds speeds, DriveFeedforwards dff) {
@@ -271,7 +271,7 @@ public class DriveSubsystem extends SubsystemBase {
    * @return the robot's heading.
    */
   public Rotation2d getHeading() {
-    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble());
+    return Rotation2d.fromDegrees(m_gyro.getYaw().getValueAsDouble() % 360);
   }
 
   /**
