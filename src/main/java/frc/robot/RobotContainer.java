@@ -9,7 +9,6 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.PS4Controller.Button;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -84,11 +83,6 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // DRIVER BINDINGS
-    // Press right bumper to set wheels in X
-    new JoystickButton(m_driverController, Button.kR1.value)
-        .whileTrue(new RunCommand(
-            () -> m_robotDrive.setX(),
-            m_robotDrive));
     // Press down on right joystick to zero heading
     new Trigger(() -> m_driverController.getRightStickButton())
         .onTrue(new InstantCommand(
