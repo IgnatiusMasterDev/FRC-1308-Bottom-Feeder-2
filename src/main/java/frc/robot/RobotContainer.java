@@ -21,6 +21,7 @@ import frc.robot.Constants.OIConstants;
 
 import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
+import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
@@ -40,6 +41,7 @@ public class RobotContainer {
   public final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   public final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
   public final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
+  public final ClimberSubsystem m_climber = new ClimberSubsystem();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
@@ -151,10 +153,19 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
         () -> m_grabberWheels.in(), m_grabberWheels));
 
+    // TODO temporarily remove this binding to allow for climber testing
     // Hold X to spin grabber wheels outward
+    //new Trigger(() -> m_operatorController.getXButton())
+    //.whileTrue(new RunCommand(
+    //    () -> m_grabberWheels.out(), m_grabberWheels));
+
+    // CLIMBER BINDINGS
+    new Trigger(() -> m_operatorController.getYButton())
+        .whileTrue(new RunCommand(
+            () -> m_climber.setSpeed(.1), m_climber));
     new Trigger(() -> m_operatorController.getXButton())
-    .whileTrue(new RunCommand(
-        () -> m_grabberWheels.out(), m_grabberWheels));
+        .whileTrue(new RunCommand(
+            () -> m_climber.setSpeed(-.1), m_climber));
   }
 
   /**
