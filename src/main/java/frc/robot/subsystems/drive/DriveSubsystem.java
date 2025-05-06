@@ -7,10 +7,6 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
-import java.util.Optional;
-
-import org.photonvision.EstimatedRobotPose;
-
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -26,7 +22,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
@@ -89,9 +84,6 @@ public class DriveSubsystem extends SubsystemBase {
   private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = table
     .getStructArrayTopic("desired swerve state", SwerveModuleState.struct)
     .publish();
-    private final BooleanPublisher visionEstimationsPublisher = table
-    .getBooleanTopic("receiving vision estimations")
-    .publish();
 
   // Used to retrieve height percent from elevator subsystem for speed calculations
   private final NetworkTable elevatorTable = networkTables.getTable("elevator");
@@ -141,7 +133,6 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
-    addVisionMeasurement(m_photonvision.getEstimatedPose());
     
     // Publish DriveSubsystem telemetry to NetworkTables
     posePublisher.set(new Pose2d[] {getPose()});
@@ -165,24 +156,6 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void resetPose(Pose2d pose) {
     m_poseEstimator.resetPose(pose);
-  }
-
-  /**
-   * Adds a pose estimation from a vision source to the DriveSubsystem's pose estimator.
-   * 
-   * @param visionRobotPoseMeters The pose of the robot as measured by the vision camera.
-   * @param timestampSeconds The timestamp of the vision measurement in seconds since startup. This can be retrieved wit
-   * {@code Timer.getFPGATimestamp()}.
-   */
-  public void addVisionMeasurement(Optional<EstimatedRobotPose> estimatedRobotPose) {
-    try {
-      Pose2d pose = estimatedRobotPose.get().estimatedPose.toPose2d();
-      double timestampSeconds = estimatedRobotPose.get().timestampSeconds;
-      m_poseEstimator.addVisionMeasurement(pose, timestampSeconds);
-      visionEstimationsPublisher.set(true);
-    } catch (Exception e) {
-      visionEstimationsPublisher.set(false);
-    }
   }
 
   /**

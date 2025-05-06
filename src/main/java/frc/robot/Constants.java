@@ -97,7 +97,7 @@ public final class Constants {
   }
 
   public static class VisionConstants {
-    public static final String kPhotonCameraName = "camera0";
+    public static final String kPhotonCameraName = "arducam";
     public static final Transform3d kRobotToCamTransform = new Transform3d(1, 0, .915, Rotation3d.kZero);
   }
 
