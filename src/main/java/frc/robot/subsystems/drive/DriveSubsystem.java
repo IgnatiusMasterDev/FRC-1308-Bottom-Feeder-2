@@ -7,6 +7,8 @@ package frc.robot.subsystems.drive;
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
 
+import org.photonvision.EstimatedRobotPose;
+
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
@@ -22,6 +24,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
@@ -84,6 +87,9 @@ public class DriveSubsystem extends SubsystemBase {
   private final StructArrayPublisher<SwerveModuleState> desiredSwerveStatePublisher = table
     .getStructArrayTopic("desired swerve state", SwerveModuleState.struct)
     .publish();
+  private final BooleanPublisher receivingVisionDataPublisher = table
+    .getBooleanTopic("receiving vision data")
+    .publish();
 
   // Used to retrieve height percent from elevator subsystem for speed calculations
   private final NetworkTable elevatorTable = networkTables.getTable("elevator");
@@ -133,6 +139,7 @@ public class DriveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     m_poseEstimator.update(getHeading(), getModulePositions());
+    addVisionMeasurement(m_photonvision.estimateRobotPose());
     
     // Publish DriveSubsystem telemetry to NetworkTables
     posePublisher.set(new Pose2d[] {getPose()});
@@ -156,6 +163,21 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void resetPose(Pose2d pose) {
     m_poseEstimator.resetPose(pose);
+  }
+
+  /**
+   * Adds a vision measurement to the pose estimator and sets the receivingVisionDataPubliser
+   * to true or false (if the vision measurement is null).
+   * 
+   * @param visionPose The vision pose to add.
+   */
+  public void addVisionMeasurement(EstimatedRobotPose visionPose) {
+    if (visionPose != null) {
+      m_poseEstimator.addVisionMeasurement(visionPose.estimatedPose.toPose2d(), visionPose.timestampSeconds);
+      receivingVisionDataPublisher.set(true);
+    } else {
+      receivingVisionDataPublisher.set(false);
+    }
   }
 
   /**
