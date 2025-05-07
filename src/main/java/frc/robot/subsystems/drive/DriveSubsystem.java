@@ -30,8 +30,10 @@ import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.VisionConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class DriveSubsystem extends SubsystemBase {
@@ -69,7 +71,7 @@ public class DriveSubsystem extends SubsystemBase {
 
   // Pose estimator
   private SwerveDrivePoseEstimator m_poseEstimator;
-  private PhotonVision m_photonvision = new PhotonVision();
+  private PhotonVision m_photonvision = new PhotonVision(VisionConstants.kPhotonCameraName);
 
   // NetworkTable variables
   private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
@@ -78,8 +80,8 @@ public class DriveSubsystem extends SubsystemBase {
   private final DoublePublisher headingPublisher = table
     .getDoubleTopic("heading")
     .publish();
-  private final StructArrayPublisher<Pose2d> posePublisher = table
-    .getStructArrayTopic("pose", Pose2d.struct)
+  private final StructPublisher<Pose2d> posePublisher = table
+    .getStructTopic("pose", Pose2d.struct)
     .publish();
   private final StructArrayPublisher<SwerveModuleState> swerveStatePublisher = table
     .getStructArrayTopic("current swerve state", SwerveModuleState.struct)
@@ -142,7 +144,7 @@ public class DriveSubsystem extends SubsystemBase {
     addVisionMeasurement(m_photonvision.estimateRobotPose());
     
     // Publish DriveSubsystem telemetry to NetworkTables
-    posePublisher.set(new Pose2d[] {getPose()});
+    posePublisher.set(getPose());
     headingPublisher.set(getHeading().getDegrees());
     swerveStatePublisher.set(getModuleStates());
     desiredSwerveStatePublisher.set(getDesiredModuleStates());
