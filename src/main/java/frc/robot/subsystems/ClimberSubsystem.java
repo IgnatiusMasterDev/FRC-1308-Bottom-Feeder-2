@@ -14,7 +14,7 @@ public final class ClimberSubsystem extends SubsystemBase{
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
     private final NetworkTable table = networkTables.getTable("climber");
 
-    private final double tightenLimit = 137.453;
+    private final double tightenLimit = 125;
     private final double loosenLimit = 8.741;
     private final double percentileFactor = (tightenLimit - loosenLimit);
 
@@ -45,6 +45,7 @@ public final class ClimberSubsystem extends SubsystemBase{
     public void loosen(double speed) {
         if (!fullyLoosened()) {
             setSpeed(-speed);
+            motor.setNeutralMode(NeutralModeValue.Coast);
         } else {
             stop();
         }
@@ -66,6 +67,7 @@ public final class ClimberSubsystem extends SubsystemBase{
     /** Stops the climber. */
     public void stop() {
         motor.stopMotor();
+        motor.setNeutralMode(NeutralModeValue.Brake);
     }
 
     /**

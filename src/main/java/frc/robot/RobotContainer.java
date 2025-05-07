@@ -21,6 +21,7 @@ import frc.robot.Constants.OIConstants;
 
 import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
+import frc.robot.commands.ToggleClimberCommand;
 import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -72,6 +73,7 @@ public class RobotContainer {
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
     m_grabberArms.setDefaultCommand(new RunCommand(() -> m_grabberArms.stop(), m_grabberArms));
     m_grabberWheels.setDefaultCommand(new RunCommand(() -> m_grabberWheels.stop(), m_grabberWheels));
+    m_climber.setDefaultCommand(new RunCommand(() -> m_climber.stop(), m_climber));
   }
 
   /**
@@ -153,19 +155,15 @@ public class RobotContainer {
         .whileTrue(new RunCommand(
         () -> m_grabberWheels.in(), m_grabberWheels));
 
-    // TODO temporarily remove this binding to allow for climber testing
     // Hold X to spin grabber wheels outward
-    //new Trigger(() -> m_operatorController.getXButton())
-    //.whileTrue(new RunCommand(
-    //    () -> m_grabberWheels.out(), m_grabberWheels));
+    new Trigger(() -> m_operatorController.getXButton())
+    .whileTrue(new RunCommand(
+        () -> m_grabberWheels.out(), m_grabberWheels));
 
     // CLIMBER BINDINGS
+    ToggleClimberCommand toggleClimber = new ToggleClimberCommand(m_climber);
     new Trigger(() -> m_operatorController.getYButton())
-        .whileTrue(new RunCommand(
-            () -> m_climber.setSpeed(.1), m_climber));
-    new Trigger(() -> m_operatorController.getXButton())
-        .whileTrue(new RunCommand(
-            () -> m_climber.setSpeed(-.1), m_climber));
+        .onTrue(toggleClimber);
   }
 
   /**
