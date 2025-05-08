@@ -14,8 +14,8 @@ public final class ClimberSubsystem extends SubsystemBase{
     private final NetworkTableInstance networkTables = NetworkTableInstance.getDefault();
     private final NetworkTable table = networkTables.getTable("climber");
 
-    private final double tightenLimit = 125;
-    private final double loosenLimit = 8.741;
+    private final double tightenLimit = 27.951;
+    private final double loosenLimit = -93.913;
     private final double percentileFactor = (tightenLimit - loosenLimit);
 
     private final DoublePublisher positionPublisher = table

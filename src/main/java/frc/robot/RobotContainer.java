@@ -21,7 +21,6 @@ import frc.robot.Constants.OIConstants;
 
 import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
-import frc.robot.commands.ToggleClimberCommand;
 import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
@@ -108,6 +107,16 @@ public class RobotContainer {
             () -> m_robotDrive.setFieldRelative(false)))
         .whileFalse(new InstantCommand(
             () -> m_robotDrive.setFieldRelative(true)));
+
+    // Press X button to loosen climber
+    new Trigger(() -> m_driverController.getXButton())
+        .whileTrue(new RunCommand(
+            () -> m_climber.loosen(1), m_climber));
+
+    // Press B button to tighten climber
+    new Trigger(() -> m_driverController.getBButton())
+        .whileTrue(new RunCommand(
+            () -> m_climber.tighten(.5), m_climber));
     
     // ELEVATOR BINDINGS
     // Press right trigger to raise elevator
@@ -159,11 +168,6 @@ public class RobotContainer {
     new Trigger(() -> m_operatorController.getXButton())
     .whileTrue(new RunCommand(
         () -> m_grabberWheels.out(), m_grabberWheels));
-
-    // CLIMBER BINDINGS
-    ToggleClimberCommand toggleClimber = new ToggleClimberCommand(m_climber);
-    new Trigger(() -> m_operatorController.getYButton())
-        .onTrue(toggleClimber);
   }
 
   /**
