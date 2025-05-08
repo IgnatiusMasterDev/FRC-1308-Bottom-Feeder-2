@@ -99,16 +99,6 @@ public class ArmsSubsystem extends SubsystemBase {
     }
 
     /**
-     * Sets the speed of the arm talon. Should be a number between -1 and 1. Positive is
-     * up and negative is down.
-     * 
-     * @param speed the speed to which to set the arm talon between -1 and 1.
-     */
-    public void setSpeed(double speed) {
-        armTalon.set(speed);
-    }
-
-    /**
      * Returns whether the grabber arms are fully raised (<= 0 degrees).
      * 
      * @return true if the grabber arms are fully raised.

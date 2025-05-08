@@ -13,7 +13,7 @@ public class MoveArmsCommand extends Command{
     private final int direction;
     private final Rotation2d m_targetAngle;
     private final ArmsSubsystem m_armsSubsystem;
-    private final PIDController pidController = new PIDController(.001, 0, 0);
+    private final PIDController m_pidController = new PIDController(.001, 0, 0);
 
     /**
      * Creates a new MoveArmsCommand to move the arms to the specified angle.
@@ -38,7 +38,6 @@ public class MoveArmsCommand extends Command{
     public MoveArmsCommand(Rotation2d targetAngle, double toleranceDegrees, ArmsSubsystem armsSubsystem) {
         m_armsSubsystem = armsSubsystem;
         m_targetAngle = clampAngle(targetAngle);
-        m_pidController = new PIDController(0.02, 0.0, 0.001); // Tuned PID values for smoother movement
         m_pidController.setTolerance(toleranceDegrees); // Allowable error in degrees
         m_pidController.setSetpoint(m_targetAngle.getDegrees());
 
@@ -54,6 +53,24 @@ public class MoveArmsCommand extends Command{
         addRequirements(armsSubsystem);
     }
 
+    /**
+    * Clamps the given angle to the range [0, 90] degrees.
+    *
+    * @param angle The input angle as a Rotation2d object.
+    * 
+    * @return A Rotation2d object with the angle clamped to the range [0, 90] degrees.
+    */
+    private Rotation2d clampAngle(Rotation2d angle) {
+        double degrees = angle.getDegrees();
+        if (degrees < 0) {
+            return Rotation2d.fromDegrees(0);
+        } else if (degrees > 90) {
+            return Rotation2d.fromDegrees(90);
+        } else {
+            return angle;
+        }
+    }
+
     @Override
     public void initialize() {
         // Reset the PID controller to ensure a smooth start
@@ -63,10 +80,10 @@ public class MoveArmsCommand extends Command{
     @Override
     public void execute() {
         if (direction == 1) {
-            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            double speed = m_pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
             m_armsSubsystem.setSpeed(speed);
         } else {
-            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            double speed = m_pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
             m_armsSubsystem.setSpeed(-speed);
         }
     }
