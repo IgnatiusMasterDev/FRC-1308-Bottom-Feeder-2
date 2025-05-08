@@ -6,22 +6,21 @@ package frc.robot;
 
 import java.util.List;
 
+import com.pathplanner.lib.auto.NamedCommands;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.wpilibj.PS4Controller.Button;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -29,8 +28,10 @@ import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
+
 import frc.robot.commands.MoveArmsCommand;
 import frc.robot.commands.ToggleArmsCommand;
+import frc.robot.subsystems.ClimberSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.drive.DriveSubsystem;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
@@ -50,6 +51,7 @@ public class RobotContainer {
   public final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   public final ArmsSubsystem m_grabberArms = new ArmsSubsystem();
   public final WheelsSubsystem m_grabberWheels = new WheelsSubsystem();
+  public final ClimberSubsystem m_climber = new ClimberSubsystem();
 
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
@@ -62,6 +64,10 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
 
+    // Register named commands for PathPlanner
+    NamedCommands.registerCommand("Raise Elevator to .45m", m_elevator.setToHeight(.45));
+    NamedCommands.registerCommand("Drop Arms to 45 degrees", new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
+
     // Configure default commands
     m_robotDrive.setDefaultCommand(
         // The left stick controls translation of the robot.
@@ -70,13 +76,13 @@ public class RobotContainer {
             () -> m_robotDrive.drive(
                 -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                m_elevator.getPositionPercentile()),
+                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband)),
             m_robotDrive));
     
     m_elevator.setDefaultCommand(new RunCommand(() -> m_elevator.stop(), m_elevator));
     m_grabberArms.setDefaultCommand(new RunCommand(() -> m_grabberArms.stop(), m_grabberArms));
     m_grabberWheels.setDefaultCommand(new RunCommand(() -> m_grabberWheels.stop(), m_grabberWheels));
+    m_climber.setDefaultCommand(new RunCommand(() -> m_climber.stop(), m_climber));
   }
 
   /**
@@ -90,11 +96,6 @@ public class RobotContainer {
    */
   private void configureButtonBindings() {
     // DRIVER BINDINGS
-    // Press right bumper to set wheels in X
-    new JoystickButton(m_driverController, Button.kR1.value)
-        .whileTrue(new RunCommand(
-            () -> m_robotDrive.setX(),
-            m_robotDrive));
     // Press down on right joystick to zero heading
     new Trigger(() -> m_driverController.getRightStickButton())
         .onTrue(new InstantCommand(
@@ -116,6 +117,16 @@ public class RobotContainer {
             () -> m_robotDrive.setFieldRelative(false)))
         .whileFalse(new InstantCommand(
             () -> m_robotDrive.setFieldRelative(true)));
+
+    // Press X button to loosen climber
+    new Trigger(() -> m_driverController.getXButton())
+        .whileTrue(new RunCommand(
+            () -> m_climber.loosen(1), m_climber));
+
+    // Press B button to tighten climber
+    new Trigger(() -> m_driverController.getBButton())
+        .whileTrue(new RunCommand(
+            () -> m_climber.tighten(.5), m_climber));
     
     // ELEVATOR BINDINGS
     // Press right trigger to raise elevator
@@ -142,9 +153,6 @@ public class RobotContainer {
     // Press D pad right to set to Coral 2
     new Trigger(() -> m_operatorController.getPOV() == 90)
     .onTrue(m_elevator.setToHeight(ElevatorConstants.coral2Height));
-        
-    // new Trigger(() -> m_driverController.getAButton())
-    //     .onTrue(m_elevator.setToHeight(1.0));
     
     // GRABBER BINDINGS
     // Press right bumper to raise arms
@@ -160,10 +168,9 @@ public class RobotContainer {
     new Trigger(() -> m_operatorController.getBButton())
         .onTrue(toggleArms);
     
-
     // Hold A to spin grabber wheels inward
     new Trigger(() -> m_operatorController.getAButton())
-    .whileTrue(new RunCommand(
+        .whileTrue(new RunCommand(
         () -> m_grabberWheels.in(), m_grabberWheels));
 
     // Hold X to spin grabber wheels outward
@@ -178,6 +185,8 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
+    //return new PathPlannerAuto("Coral dropoff from center"); TODO we should try out PathPlanner sometime
+
     // Create config for trajectory
     TrajectoryConfig config = new TrajectoryConfig(
         AutoConstants.kMaxSpeedMetersPerSecond,
@@ -212,13 +221,10 @@ public class RobotContainer {
         m_robotDrive::setModuleStates,
         m_robotDrive);
 
-    // Reset odometry to the starting pose of the trajectory.
-    //m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose()); // TODO figure out how to implement pose estimation instead of odometry
-
     // Run path following command, then stop at the end.
     //return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, 0));
     return m_elevator.setToHeight(.45)
-        .alongWith(swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0,0)))
+        .alongWith(swerveControllerCommand.andThen(() -> m_robotDrive.drive(0,0,0)))
         .andThen(new MoveArmsCommand(Rotation2d.fromDegrees(45), m_grabberArms));
     
   }

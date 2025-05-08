@@ -26,6 +26,9 @@ public class ArmsSubsystem extends SubsystemBase {
     private final DoublePublisher encoderPublisher = table
         .getDoubleTopic("position")
         .publish();
+    private final DoublePublisher anglePublisher = table
+        .getDoubleTopic("angle")
+        .publish();
     private final DoublePublisher velocityPublisher = table
         .getDoubleTopic("velocity")
         .publish();
@@ -48,39 +51,10 @@ public class ArmsSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         encoderPublisher.set(getPosition());
+        anglePublisher.set(getAngle().getDegrees());
         velocityPublisher.set(getVelocity());
         fullyRaisedPublisher.set(fullyRaised());
         fullyLoweredPublisher.set(fullyLowered());
-    }
-
-    /**
-     * Returns the current position of the grabber arms.
-     * 
-     * @return The current position of the encoder in rotations.
-     */
-    private double getPosition() {
-        return encoder.get();
-    }
-
-    /**
-     * Returns the current angle of the grabber arms in degrees. This is the angle between
-     * the vertical line and te grabber arms; that is, an angle of 0 is fully raised and an
-     * angle of 90 is fully lowered.
-     * 
-     * @return The current position of the encoder in degrees.
-     */
-    public Rotation2d getAngle() {
-        return Rotation2d.fromDegrees(encoder.get() * 125 - 18.75);
-    }
-
-    /**
-     * Returns the current velocity of the grabber arms. Value is betweeen -1 and 1
-     * where negative is lowering the arms and positive is raising the arms.
-     * 
-     * @return The current velocity of the grabber arms between -1 and 1,
-     */
-    private double getVelocity() {
-        return armTalon.get();
     }
 
     /**
@@ -125,20 +99,60 @@ public class ArmsSubsystem extends SubsystemBase {
     }
 
     /**
-     * Returns whether the grabber arms are fully raised.
+     * Sets the speed of the arm talon. Should be a number between -1 and 1. Positive is
+     * up and negative is down.
+     * 
+     * @param speed the speed to which to set the arm talon between -1 and 1.
+     */
+    public void setSpeed(double speed) {
+        armTalon.set(speed);
+    }
+
+    /**
+     * Returns whether the grabber arms are fully raised (<= 0 degrees).
      * 
      * @return true if the grabber arms are fully raised.
      */
     public boolean fullyRaised() {
-        return encoder.get() > GrabberConstants.upperThreshold && encoder.get() < .5;
+        return getAngle().getDegrees() <= 0;
     }
 
     /**
-     * Returns whether the grabber arms are fully lowered.
+     * Returns whether the grabber arms are fully lowered (>= 90 degrees).
      * 
      * @return true if the grabber arms are fully lowered.
      */
     public boolean fullyLowered() {
-        return encoder.get() < GrabberConstants.lowerThreshold && encoder.get() > .5;
+        return getAngle().getDegrees() >= 90;
+    }
+
+    /**
+     * Returns the current angle of the grabber arms in degrees. This is the angle between
+     * the vertical line and te grabber arms; that is, an angle of 0 is fully raised and an
+     * angle of 90 is fully lowered.
+     * 
+     * @return The current angle of the grabber arms in degrees.
+     */
+    public Rotation2d getAngle() {
+        return Rotation2d.fromDegrees(getPosition() * -320.28 + 213.12); // TODO it would be helpful to abstract the conversion equation
+    }
+
+    /**
+     * Returns the current position of the grabber arms.
+     * 
+     * @return The current position of the encoder in rotations.
+     */
+    private double getPosition() {
+        return encoder.get();
+    }
+
+    /**
+     * Returns the current velocity of the grabber arms. Value is betweeen -1 and 1
+     * where negative is lowering the arms and positive is raising the arms.
+     * 
+     * @return The current velocity of the grabber arms between -1 and 1,
+     */
+    private double getVelocity() {
+        return armTalon.get();
     }
 }

@@ -27,6 +27,7 @@ import edu.wpi.first.math.util.Units;
  */
 public final class Constants {
   public static final class DriveConstants {
+    public static final Pose2d kStartingPose = new Pose2d(7.5565, 4.025, Rotation2d.k180deg);
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
     public static final double kMaxSpeedMetersPerSecond = 7;
@@ -96,7 +97,7 @@ public final class Constants {
   }
 
   public static class VisionConstants {
-    public static final String kPhotonCameraName = "camera0";
+    public static final String kPhotonCameraName = "arducam";
     public static final Transform3d kRobotToCamTransform = new Transform3d(1, 0, .915, Rotation3d.kZero);
   }
 
@@ -150,7 +151,6 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
-    public static final Pose2d kStartPose = new Pose2d(0, 0, Rotation2d.kZero);
     public static final double kMaxSpeedMetersPerSecond = .5;
     public static final double kMaxAccelerationMetersPerSecondSquared = 0.1;
     public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;

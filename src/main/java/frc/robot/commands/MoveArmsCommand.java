@@ -15,25 +15,32 @@ public class MoveArmsCommand extends Command{
     private final ArmsSubsystem m_armsSubsystem;
     private final PIDController pidController = new PIDController(.001, 0, 0);
 
-
     /**
-     * Creates a new MoveArmsCommand that moves the arms to the specified angle.
+     * Creates a new MoveArmsCommand to move the arms to the specified angle.
      * 
-     * @param angle the angle to which to move the arms. An angle of 0 is fully raised while
-     * an angle equivalent to 90 degrees of pi / 2 is fully lowered. Any angle outside of that range will
-     * be clamped to that range.
+     * @param targetAngle The target angle for the arms. Clamped to the range [0, 90] degrees. An
+     * angle of 0 degrees is fully raised and 90 degrees is fully lowered.
+     * @param toleranceDegrees The tolerance range in degrees for the command's termination.
+     * @param armsSubsystem The ArmsSubsystem controlling the robot's arms.
      */
     public MoveArmsCommand(Rotation2d targetAngle, ArmsSubsystem armsSubsystem) {
+        this(targetAngle, 1.0, armsSubsystem);
+    }
+    
+    /**
+     * Creates a new MoveArmsCommand to move the arms to the specified angle.
+     * 
+     * @param targetAngle The target angle for the arms. Clamped to the range [0, 90] degrees. An
+     * angle of 0 degrees is fully raised and 90 degrees is fully lowered.
+     * @param toleranceDegrees The tolerance range in degrees for the command's termination.
+     * @param armsSubsystem The ArmsSubsystem controlling the robot's arms.
+     */
+    public MoveArmsCommand(Rotation2d targetAngle, double toleranceDegrees, ArmsSubsystem armsSubsystem) {
         m_armsSubsystem = armsSubsystem;
-
-        // Clamp the target angle to the range [0, pi/2]
-        if (targetAngle.getDegrees() < 0) {
-            m_targetAngle = new Rotation2d(0);
-        } else if (targetAngle.getDegrees() > 90) {
-            m_targetAngle = new Rotation2d(90);
-        } else {
-            m_targetAngle = targetAngle;
-        }
+        m_targetAngle = clampAngle(targetAngle);
+        m_pidController = new PIDController(0.02, 0.0, 0.001); // Tuned PID values for smoother movement
+        m_pidController.setTolerance(toleranceDegrees); // Allowable error in degrees
+        m_pidController.setSetpoint(m_targetAngle.getDegrees());
 
         // Determine directon of movement
         // if target angle value is higher (meaning the arms are actually lower) than the actual angle
@@ -45,6 +52,12 @@ public class MoveArmsCommand extends Command{
         }
       
         addRequirements(armsSubsystem);
+    }
+
+    @Override
+    public void initialize() {
+        // Reset the PID controller to ensure a smooth start
+        m_pidController.reset();
     }
 
     @Override
