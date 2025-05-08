@@ -6,15 +6,14 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.grabber.ArmsSubsystem;
 
 /**
- * Command to move the robot's arms to a specified angle.
- * 
- * <p>An angle of 0 degrees corresponds to fully raised arms, while 90 degrees corresponds to fully lowered arms.
- * Any angle outside this range will be clamped.
+ * This command moves the robot's arms to a specified angle.
  */
-public class MoveArmsCommand extends Command {
-    private final ArmsSubsystem m_armsSubsystem;
+public class MoveArmsCommand extends Command{
+    
+    private final int direction;
     private final Rotation2d m_targetAngle;
-    private final PIDController m_pidController;
+    private final ArmsSubsystem m_armsSubsystem;
+    private final PIDController pidController = new PIDController(.001, 0, 0);
 
     /**
      * Creates a new MoveArmsCommand to move the arms to the specified angle.
@@ -43,6 +42,15 @@ public class MoveArmsCommand extends Command {
         m_pidController.setTolerance(toleranceDegrees); // Allowable error in degrees
         m_pidController.setSetpoint(m_targetAngle.getDegrees());
 
+        // Determine directon of movement
+        // if target angle value is higher (meaning the arms are actually lower) than the actual angle
+        if (m_targetAngle.getDegrees() < m_armsSubsystem.getAngle().getDegrees()) {
+            direction = 1; // raise arms
+        // else lower
+        } else {
+            direction = -1;
+        }
+      
         addRequirements(armsSubsystem);
     }
 
@@ -54,40 +62,24 @@ public class MoveArmsCommand extends Command {
 
     @Override
     public void execute() {
-        // Get the current angle of the arms
-        double currentAngle = m_armsSubsystem.getAngle().getDegrees();
-
-        // Calculate the output speed using the PID controller
-        double speed = m_pidController.calculate(currentAngle);
-
-        // Apply a feedforward term to improve responsiveness
-        double feedforward = 0.05 * Math.signum(m_targetAngle.getDegrees() - currentAngle);
-
-        // Set the arm speed, combining PID output and feedforward
-        m_armsSubsystem.setSpeed(speed + feedforward);
+        if (direction == 1) {
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(speed);
+        } else {
+            double speed = pidController.calculate(m_armsSubsystem.getAngle().getDegrees(), m_targetAngle.getDegrees());
+            m_armsSubsystem.setSpeed(-speed);
+        }
     }
 
     @Override
     public boolean isFinished() {
-        // Finish when the arms are within the tolerance of the target angle
-        return m_pidController.atSetpoint();
-    }
-
-    @Override
-    public void end(boolean interrupted) {
-        // Stop the arms when the command ends
-        m_armsSubsystem.stop();
-    }
-
-    /**
-     * Clamps the target angle to the range [0, 90] degrees.
-     * 
-     * @param angle The desired target angle.
-     * 
-     * @return A clamped Rotation2d object.
-     */
-    private Rotation2d clampAngle(Rotation2d angle) {
-        double clampedDegrees = Math.max(0, Math.min(90, angle.getDegrees()));
-        return Rotation2d.fromDegrees(clampedDegrees);
+        // if we are raising
+        if (direction == 1) {
+        // check if the arms angle is equal to or less than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() <= m_targetAngle.getDegrees();
+        } else {
+        // else check if the arms angle is equal to or greater than the target angle
+            return m_armsSubsystem.getAngle().getDegrees() >= m_targetAngle.getDegrees();
+        }
     }
 }
